@@ -8,11 +8,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import pandas as pd
 import io
-import re
 
 
 # ============================================================
-# CREATE APP
+# CREATE FASTAPI APP
 # ============================================================
 
 app = FastAPI(
@@ -41,6 +40,7 @@ app.add_middleware(
 
 @app.get("/")
 def home():
+
     return {
         "success": True,
         "message": "DataMind AI backend is running!",
@@ -78,26 +78,21 @@ def find_sales_column(df):
         "revenue",
         "Amount",
         "amount",
+        "Price",
+        "price",
         "Value",
-        "value",
-        "Total Sales",
-        "total_sales"
+        "value"
     ]
 
     for column in possible_columns:
 
         if column in df.columns:
 
-            if pd.api.types.is_numeric_dtype(df[column]):
+            if pd.api.types.is_numeric_dtype(
+                df[column]
+            ):
+
                 return column
-
-    # Backup: find first numeric column
-    numeric_columns = df.select_dtypes(
-        include="number"
-    ).columns
-
-    if len(numeric_columns) > 0:
-        return numeric_columns[0]
 
     return None
 
@@ -113,7 +108,6 @@ def find_product_column(df):
         "product",
         "Product Name",
         "product_name",
-        "ProductName",
         "Item",
         "item",
         "Category",
@@ -123,43 +117,63 @@ def find_product_column(df):
     for column in possible_columns:
 
         if column in df.columns:
+
             return column
-
-    # Backup: find a text column
-    text_columns = df.select_dtypes(
-        include="object"
-    ).columns
-
-    if len(text_columns) > 0:
-        return text_columns[0]
 
     return None
 
 
 # ============================================================
-# CREATE PRODUCT CHART
+# FIND NUMERIC COLUMN
 # ============================================================
 
-def create_product_chart(
+def find_numeric_column(df):
+
+    numeric_columns = list(
+        df.select_dtypes(
+            include="number"
+        ).columns
+    )
+
+    if numeric_columns:
+
+        return numeric_columns[0]
+
+    return None
+
+
+# ============================================================
+# CREATE BAR CHART DATA
+# ============================================================
+
+def create_chart_data(
     df,
-    product_column,
-    sales_column
+    category_column,
+    value_column
 ):
 
     grouped = (
-        df.groupby(product_column)[sales_column]
+        df.groupby(category_column)[value_column]
         .sum()
-        .sort_values(ascending=False)
+        .sort_values(
+            ascending=False
+        )
     )
 
     chart_data = []
 
-    for product, value in grouped.items():
+    for category, value in grouped.items():
 
-        chart_data.append({
-            "category": str(product),
-            "value": round(float(value), 2)
-        })
+        chart_data.append(
+            {
+                "category": str(category),
+
+                "value": round(
+                    float(value),
+                    2
+                )
+            }
+        )
 
     return chart_data
 
@@ -174,124 +188,138 @@ async def ask_question(
     question: str = Form(...)
 ):
 
-    question_original = question.strip()
+    # --------------------------------------------------------
+    # CHECK FILE
+    # --------------------------------------------------------
+
+    if not file.filename:
+
+        return {
+            "success": False,
+            "answer": "Please upload a CSV file."
+        }
+
 
     if not file.filename.lower().endswith(".csv"):
 
         return {
             "success": False,
-            "question": question_original,
             "answer": "Please upload a CSV file."
         }
+
 
     try:
 
         # ----------------------------------------------------
-        # READ CSV
+        # READ DATA
         # ----------------------------------------------------
 
         df = await read_csv(file)
 
+
+        if df.empty:
+
+            return {
+                "success": False,
+                "answer": "The uploaded CSV file is empty."
+            }
+
+
         # ----------------------------------------------------
-        # NORMALIZE QUESTION
+        # QUESTION
         # ----------------------------------------------------
+
+        question_original = question.strip()
 
         q = question_original.lower()
 
-        q = re.sub(
-            r"[?!.,]",
-            "",
-            q
-        )
-
-        q = re.sub(
-            r"\s+",
-            " ",
-            q
-        ).strip()
 
         # ----------------------------------------------------
-        # FIND COLUMNS
+        # FIND IMPORTANT COLUMNS
         # ----------------------------------------------------
 
         sales_column = find_sales_column(df)
 
         product_column = find_product_column(df)
 
+
         # ====================================================
-        # 1. BEST SELLING PRODUCT
+        # QUESTION 1
+        # WHICH PRODUCT SELLS THE MOST?
         # ====================================================
 
-        best_selling_keywords = [
-            "sells most",
-            "sell most",
-            "best selling",
-            "best-selling",
-            "best seller",
-            "best product",
-            "top product",
-            "highest selling",
-            "most popular",
-            "which product sells the most",
-            "which product is best",
-            "what product sells the most"
-        ]
-
-        if any(
-            keyword in q
-            for keyword in best_selling_keywords
+        if (
+            "sells most" in q
+            or "sell most" in q
+            or "best selling" in q
+            or "best-selling" in q
+            or "top product" in q
+            or "highest selling" in q
+            or "most popular" in q
+            or "best product" in q
+            or "which product sells" in q
         ):
 
             if not product_column:
 
                 return {
                     "success": False,
-                    "question": question_original,
                     "answer": (
-                        "I could not find a product "
-                        "column in your dataset."
+                        "I could not find a product column "
+                        "in your dataset."
                     )
                 }
+
 
             if not sales_column:
 
                 return {
                     "success": False,
-                    "question": question_original,
                     "answer": (
-                        "I could not find a numeric "
-                        "sales column."
+                        "I could not find a numeric sales "
+                        "column in your dataset."
                     )
                 }
+
 
             ranking = (
                 df.groupby(product_column)[sales_column]
                 .sum()
-                .sort_values(ascending=False)
+                .sort_values(
+                    ascending=False
+                )
             )
+
 
             if ranking.empty:
 
                 return {
                     "success": False,
-                    "question": question_original,
-                    "answer": "No product data found."
+                    "answer": "No product sales data was found."
                 }
+
 
             best_product = ranking.index[0]
 
             best_value = ranking.iloc[0]
 
-            ranking_data = {
-                str(product): round(float(value), 2)
-                for product, value in ranking.items()
-            }
 
-            chart_data = create_product_chart(
+            ranking_data = {}
+
+            for product, value in ranking.items():
+
+                ranking_data[str(product)] = round(
+                    float(value),
+                    2
+                )
+
+
+            chart_data = create_chart_data(
                 df,
                 product_column,
                 sales_column
             )
+
 
             return {
 
@@ -313,46 +341,51 @@ async def ask_question(
                 "ranking": ranking_data,
 
                 "chart": {
+
                     "chart_type": "bar",
+
                     "title": (
                         f"{sales_column} by "
                         f"{product_column}"
                     ),
+
                     "x_axis": product_column,
+
                     "y_axis": sales_column,
+
                     "data": chart_data
                 }
             }
 
+
         # ====================================================
-        # 2. TOTAL SALES
+        # QUESTION 2
+        # TOTAL SALES
         # ====================================================
 
-        if any(
-            keyword in q
-            for keyword in [
-                "total sales",
-                "total sale",
-                "sum of sales",
-                "sales total",
-                "how much sales",
-                "total revenue",
-                "total amount"
-            ]
+        if (
+            "total sales" in q
+            or "total sale" in q
+            or "sum of sales" in q
+            or "sales total" in q
+            or "how much sales" in q
+            or "total revenue" in q
+            or "total amount" in q
         ):
 
             if not sales_column:
 
                 return {
                     "success": False,
-                    "question": question_original,
                     "answer": (
-                        "I could not find a numeric "
-                        "sales column."
+                        "I could not find a numeric sales "
+                        "column in your dataset."
                     )
                 }
 
+
             total = df[sales_column].sum()
+
 
             return {
 
@@ -362,42 +395,44 @@ async def ask_question(
 
                 "answer": (
                     f"The total "
-                    f"{sales_column.lower()} is "
-                    f"{total:.2f}."
+                    f"{sales_column.lower()} "
+                    f"is {total:.2f}."
                 ),
 
                 "sales_column": sales_column,
 
-                "total": round(float(total), 2)
+                "total": round(
+                    float(total),
+                    2
+                )
             }
 
+
         # ====================================================
-        # 3. AVERAGE SALES
+        # QUESTION 3
+        # AVERAGE SALES
         # ====================================================
 
-        if any(
-            keyword in q
-            for keyword in [
-                "average sales",
-                "average sale",
-                "mean sales",
-                "average revenue",
-                "average amount"
-            ]
+        if (
+            "average sales" in q
+            or "average sale" in q
+            or "mean sales" in q
+            or "average" in q
         ):
 
             if not sales_column:
 
                 return {
                     "success": False,
-                    "question": question_original,
                     "answer": (
-                        "I could not find a numeric "
-                        "sales column."
+                        "I could not find a numeric sales "
+                        "column in your dataset."
                     )
                 }
 
+
             average = df[sales_column].mean()
+
 
             return {
 
@@ -407,44 +442,46 @@ async def ask_question(
 
                 "answer": (
                     f"The average "
-                    f"{sales_column.lower()} is "
-                    f"{average:.2f}."
+                    f"{sales_column.lower()} "
+                    f"is {average:.2f}."
                 ),
 
                 "sales_column": sales_column,
 
-                "average": round(float(average), 2)
+                "average": round(
+                    float(average),
+                    2
+                )
             }
 
+
         # ====================================================
-        # 4. MAXIMUM SALES
+        # QUESTION 4
+        # MAXIMUM SALES
         # ====================================================
 
-        if any(
-            keyword in q
-            for keyword in [
-                "maximum sales",
-                "max sales",
-                "highest sales",
-                "highest sale",
-                "maximum sale",
-                "largest sale",
-                "largest sales"
-            ]
+        if (
+            "maximum sales" in q
+            or "max sales" in q
+            or "highest sales" in q
+            or "highest sale" in q
+            or "maximum sale" in q
+            or "max sale" in q
         ):
 
             if not sales_column:
 
                 return {
                     "success": False,
-                    "question": question_original,
                     "answer": (
-                        "I could not find a numeric "
-                        "sales column."
+                        "I could not find a numeric sales "
+                        "column in your dataset."
                     )
                 }
 
+
             maximum = df[sales_column].max()
+
 
             return {
 
@@ -454,44 +491,46 @@ async def ask_question(
 
                 "answer": (
                     f"The highest "
-                    f"{sales_column.lower()} is "
-                    f"{maximum:.2f}."
+                    f"{sales_column.lower()} "
+                    f"is {maximum:.2f}."
                 ),
 
                 "sales_column": sales_column,
 
-                "maximum": round(float(maximum), 2)
+                "maximum": round(
+                    float(maximum),
+                    2
+                )
             }
 
+
         # ====================================================
-        # 5. MINIMUM SALES
+        # QUESTION 5
+        # MINIMUM SALES
         # ====================================================
 
-        if any(
-            keyword in q
-            for keyword in [
-                "minimum sales",
-                "min sales",
-                "lowest sales",
-                "lowest sale",
-                "minimum sale",
-                "smallest sale",
-                "smallest sales"
-            ]
+        if (
+            "minimum sales" in q
+            or "min sales" in q
+            or "lowest sales" in q
+            or "lowest sale" in q
+            or "minimum sale" in q
+            or "min sale" in q
         ):
 
             if not sales_column:
 
                 return {
                     "success": False,
-                    "question": question_original,
                     "answer": (
-                        "I could not find a numeric "
-                        "sales column."
+                        "I could not find a numeric sales "
+                        "column in your dataset."
                     )
                 }
 
+
             minimum = df[sales_column].min()
+
 
             return {
 
@@ -501,33 +540,36 @@ async def ask_question(
 
                 "answer": (
                     f"The lowest "
-                    f"{sales_column.lower()} is "
-                    f"{minimum:.2f}."
+                    f"{sales_column.lower()} "
+                    f"is {minimum:.2f}."
                 ),
 
                 "sales_column": sales_column,
 
-                "minimum": round(float(minimum), 2)
+                "minimum": round(
+                    float(minimum),
+                    2
+                )
             }
 
+
         # ====================================================
-        # 6. NUMBER OF RECORDS
+        # QUESTION 6
+        # NUMBER OF RECORDS
         # ====================================================
 
-        if any(
-            keyword in q
-            for keyword in [
-                "number of records",
-                "number of rows",
-                "how many records",
-                "how many rows",
-                "count records",
-                "record count",
-                "row count"
-            ]
+        if (
+            "number of records" in q
+            or "number of rows" in q
+            or "how many records" in q
+            or "how many rows" in q
+            or "count records" in q
+            or "record count" in q
+            or "how many entries" in q
         ):
 
             count = len(df)
+
 
             return {
 
@@ -543,55 +585,77 @@ async def ask_question(
                 "records": count
             }
 
+
         # ====================================================
-        # 7. TOP 3 PRODUCTS
+        # QUESTION 7
+        # TOP 3 PRODUCTS
         # ====================================================
 
-        if any(
-            keyword in q
-            for keyword in [
-                "top 3 products",
-                "top three products",
-                "best 3 products",
-                "best three products",
-                "top three product",
-                "top 3 product"
-            ]
+        if (
+            "top 3 products" in q
+            or "top three products" in q
+            or "best 3 products" in q
+            or "best three products" in q
+            or "top three product" in q
+            or "top 3 product" in q
         ):
 
             if not product_column:
 
                 return {
                     "success": False,
-                    "question": question_original,
                     "answer": (
-                        "I could not find a product "
-                        "column."
+                        "I could not find a product column."
                     )
                 }
+
 
             if not sales_column:
 
                 return {
                     "success": False,
-                    "question": question_original,
                     "answer": (
-                        "I could not find a numeric "
-                        "sales column."
+                        "I could not find a numeric sales "
+                        "column."
                     )
                 }
+
 
             ranking = (
                 df.groupby(product_column)[sales_column]
                 .sum()
-                .sort_values(ascending=False)
+                .sort_values(
+                    ascending=False
+                )
                 .head(3)
             )
 
-            top_products = {
-                str(product): round(float(value), 2)
-                for product, value in ranking.items()
-            }
+
+            top_products = {}
+
+            for product, value in ranking.items():
+
+                top_products[str(product)] = round(
+                    float(value),
+                    2
+                )
+
+
+            chart_data = []
+
+            for product, value in ranking.items():
+
+                chart_data.append(
+                    {
+                        "category": str(product),
+
+                        "value": round(
+                            float(value),
+                            2
+                        )
+                    }
+                )
+
 
             return {
 
@@ -607,23 +671,23 @@ async def ask_question(
                 "ranking": top_products,
 
                 "chart": {
+
                     "chart_type": "bar",
+
                     "title": "Top 3 Products",
+
                     "x_axis": product_column,
+
                     "y_axis": sales_column,
-                    "data": [
-                        {
-                            "category": str(product),
-                            "value": round(float(value), 2)
-                        }
-                        for product, value
-                        in ranking.items()
-                    ]
+
+                    "data": chart_data
                 }
             }
 
+
         # ====================================================
-        # 8. SALES BY PRODUCT
+        # QUESTION 8
+        # SALES BY PRODUCT
         # ====================================================
 
         if (
@@ -632,35 +696,54 @@ async def ask_question(
             or "sales per product" in q
             or "product sales" in q
             or "sales for each product" in q
+            or "sales of each product" in q
         ):
 
             if not product_column:
 
                 return {
                     "success": False,
-                    "question": question_original,
                     "answer": (
-                        "I could not find a product "
-                        "column."
+                        "I could not find a product column."
                     )
                 }
+
 
             if not sales_column:
 
                 return {
                     "success": False,
-                    "question": question_original,
                     "answer": (
-                        "I could not find a numeric "
-                        "sales column."
+                        "I could not find a numeric sales "
+                        "column."
                     )
                 }
 
-            chart_data = create_product_chart(
-                df,
-                product_column,
-                sales_column
+
+            grouped = (
+                df.groupby(product_column)[sales_column]
+                .sum()
+                .sort_values(
+                    ascending=False
+                )
             )
+
+
+            chart_data = []
+
+            for product, value in grouped.items():
+
+                chart_data.append(
+                    {
+                        "category": str(product),
+
+                        "value": round(
+                            float(value),
+                            2
+                        )
+                    }
+                )
+
 
             return {
 
@@ -676,19 +759,26 @@ async def ask_question(
                 ),
 
                 "chart": {
+
                     "chart_type": "bar",
+
                     "title": (
                         f"{sales_column} by "
                         f"{product_column}"
                     ),
+
                     "x_axis": product_column,
+
                     "y_axis": sales_column,
+
                     "data": chart_data
                 }
             }
 
+
         # ====================================================
-        # 9. DATASET SUMMARY
+        # QUESTION 9
+        # DATASET SUMMARY
         # ====================================================
 
         if (
@@ -697,16 +787,16 @@ async def ask_question(
             or "summarize the data" in q
             or "summary of data" in q
             or q == "summary"
-            or "give me a summary" in q
+            or "summarize dataset" in q
+            or "give me a dataset summary" in q
         ):
 
-            numeric_columns = [
-                str(column)
-                for column
-                in df.select_dtypes(
+            numeric_columns = list(
+                df.select_dtypes(
                     include="number"
                 ).columns
-            ]
+            )
+
 
             return {
 
@@ -729,8 +819,45 @@ async def ask_question(
                     for column in df.columns
                 ],
 
-                "numeric_columns": numeric_columns
+                "numeric_columns": [
+                    str(column)
+                    for column in numeric_columns
+                ]
             }
+
+
+        # ====================================================
+        # QUESTION 10
+        # SHOW ALL DATA
+        # ====================================================
+
+        if (
+            "show data" in q
+            or "show dataset" in q
+            or "display data" in q
+            or "display dataset" in q
+        ):
+
+            preview = df.head(20).fillna("").to_dict(
+                orient="records"
+            )
+
+
+            return {
+
+                "success": True,
+
+                "question": question_original,
+
+                "answer": (
+                    "Here is a preview of your dataset."
+                ),
+
+                "rows": len(df),
+
+                "preview": preview
+            }
+
 
         # ====================================================
         # UNKNOWN QUESTION
@@ -744,7 +871,7 @@ async def ask_question(
 
             "answer": (
                 "I don't understand this question yet. "
-                "Try asking a question such as "
+                "Try asking: "
                 "'Which product sells the most?', "
                 "'What is the total sales?', "
                 "'What is the average sales?', "
@@ -753,9 +880,11 @@ async def ask_question(
                 "'How many records are there?', "
                 "'Show me the top 3 products', "
                 "'Show me sales by product', "
+                "'Show me the dataset', "
                 "or 'Give me a dataset summary'."
             )
         }
+
 
     except Exception as e:
 
@@ -766,8 +895,8 @@ async def ask_question(
             "question": question_original,
 
             "answer": (
-                "An error occurred while "
-                "analyzing your dataset."
+                "An error occurred while analyzing "
+                "your dataset."
             ),
 
             "error": str(e)
@@ -792,6 +921,7 @@ async def generate_chart(
             "error": "Please upload a CSV file."
         }
 
+
     try:
 
         contents = await file.read()
@@ -799,6 +929,7 @@ async def generate_chart(
         df = pd.read_csv(
             io.BytesIO(contents)
         )
+
 
         if column not in df.columns:
 
@@ -810,6 +941,7 @@ async def generate_chart(
                 )
             }
 
+
         if value_column not in df.columns:
 
             return {
@@ -819,6 +951,7 @@ async def generate_chart(
                     f"was not found."
                 )
             }
+
 
         if not pd.api.types.is_numeric_dtype(
             df[value_column]
@@ -832,20 +965,13 @@ async def generate_chart(
                 )
             }
 
-        grouped = (
-            df.groupby(column)[value_column]
-            .sum()
-            .sort_values(ascending=False)
+
+        chart_data = create_chart_data(
+            df,
+            column,
+            value_column
         )
 
-        chart_data = [
-            {
-                "category": str(category),
-                "value": round(float(value), 2)
-            }
-            for category, value
-            in grouped.items()
-        ]
 
         return {
 
@@ -863,6 +989,7 @@ async def generate_chart(
 
             "data": chart_data
         }
+
 
     except Exception as e:
 
@@ -892,9 +1019,11 @@ async def dataset_info(
             "error": "Please upload a CSV file."
         }
 
+
     try:
 
         df = await read_csv(file)
+
 
         return {
 
@@ -910,16 +1039,25 @@ async def dataset_info(
             ],
 
             "data_types": {
-                str(column): str(df[column].dtype)
+
+                str(column):
+                    str(df[column].dtype)
+
                 for column in df.columns
+
             },
 
             "missing_values": {
+
                 str(column):
                     int(df[column].isna().sum())
+
                 for column in df.columns
+
             }
+
         }
+
 
     except Exception as e:
 
@@ -928,9 +1066,5 @@ async def dataset_info(
             "success": False,
 
             "error": str(e)
+
         }
-
-
-# ============================================================
-# END
-# ============================================================

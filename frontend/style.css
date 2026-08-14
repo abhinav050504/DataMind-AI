@@ -37,7 +37,7 @@ body {
         center;
 
     padding:
-        40px 20px;
+        45px 20px;
 
     background:
         #111827;
@@ -50,7 +50,7 @@ body {
 .logo {
 
     font-size:
-        32px;
+        34px;
 
     font-weight:
         700;
@@ -71,17 +71,16 @@ body {
 
 
 /* ============================================================
-   MAIN CONTAINER
+   MAIN
 ============================================================ */
 
 .container {
 
     width:
-        min(900px, 92%);
+        min(1100px, 92%);
 
     margin:
         40px auto;
-
 }
 
 
@@ -101,10 +100,10 @@ body {
         25px;
 
     border-radius:
-        14px;
+        16px;
 
     box-shadow:
-        0 4px 20px rgba(0, 0, 0, 0.08);
+        0 5px 25px rgba(0, 0, 0, 0.07);
 }
 
 
@@ -114,7 +113,7 @@ body {
         10px;
 
     font-size:
-        22px;
+        23px;
 }
 
 
@@ -144,7 +143,7 @@ body {
         white;
 
     padding:
-        12px 22px;
+        13px 24px;
 
     border-radius:
         8px;
@@ -174,7 +173,7 @@ body {
 
 
 /* ============================================================
-   FILE NAME
+   FILE
 ============================================================ */
 
 .file-name {
@@ -191,7 +190,121 @@ body {
 
 
 /* ============================================================
-   QUESTION
+   DASHBOARD
+============================================================ */
+
+.dashboard {
+
+    margin-bottom:
+        25px;
+}
+
+
+.section-title {
+
+    margin-bottom:
+        20px;
+}
+
+
+.section-title h2 {
+
+    margin-bottom:
+        5px;
+}
+
+
+.section-title p {
+
+    color:
+        #6b7280;
+}
+
+
+/* ============================================================
+   STAT GRID
+============================================================ */
+
+.stats-grid {
+
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap:
+        18px;
+
+    margin-bottom:
+        25px;
+}
+
+
+.stat-card {
+
+    background:
+        white;
+
+    border-radius:
+        14px;
+
+    padding:
+        22px;
+
+    box-shadow:
+        0 5px 20px rgba(0, 0, 0, 0.07);
+}
+
+
+.stat-icon {
+
+    font-size:
+        25px;
+
+    margin-bottom:
+        12px;
+}
+
+
+.stat-label {
+
+    color:
+        #6b7280;
+
+    font-size:
+        14px;
+
+    margin-bottom:
+        8px;
+}
+
+
+.stat-value {
+
+    font-size:
+        25px;
+
+    font-weight:
+        700;
+
+    color:
+        #2563eb;
+
+    word-break:
+        break-word;
+}
+
+
+.stat-value.small {
+
+    font-size:
+        19px;
+}
+
+
+/* ============================================================
+   TEXTAREA
 ============================================================ */
 
 textarea {
@@ -244,7 +357,7 @@ textarea:focus {
 
 
 /* ============================================================
-   ANSWER BOX
+   ANSWER
 ============================================================ */
 
 .answer-box {
@@ -262,7 +375,7 @@ textarea:focus {
         20px;
 
     box-shadow:
-        0 4px 20px rgba(0, 0, 0, 0.08);
+        0 5px 20px rgba(0, 0, 0, 0.07);
 }
 
 
@@ -317,7 +430,7 @@ textarea:focus {
         20px;
 
     box-shadow:
-        0 4px 20px rgba(0, 0, 0, 0.08);
+        0 5px 20px rgba(0, 0, 0, 0.07);
 }
 
 
@@ -406,7 +519,7 @@ textarea:focus {
         25px;
 
     box-shadow:
-        0 4px 20px rgba(0, 0, 0, 0.08);
+        0 5px 20px rgba(0, 0, 0, 0.07);
 }
 
 
@@ -440,7 +553,7 @@ textarea:focus {
         grid;
 
     grid-template-columns:
-        100px 1fr 80px;
+        120px 1fr 80px;
 
     align-items:
         center;
@@ -527,7 +640,7 @@ textarea:focus {
         center;
 
     box-shadow:
-        0 4px 20px rgba(0, 0, 0, 0.08);
+        0 5px 20px rgba(0, 0, 0, 0.07);
 }
 
 
@@ -589,9 +702,6 @@ textarea:focus {
 
     padding:
         20px;
-
-    margin-bottom:
-        20px;
 }
 
 
@@ -629,15 +739,37 @@ textarea:focus {
    MOBILE
 ============================================================ */
 
+@media (max-width: 750px) {
+
+    .stats-grid {
+
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+}
+
+
 @media (max-width: 600px) {
 
     .logo {
-        font-size: 26px;
+
+        font-size:
+            27px;
     }
 
 
     .card {
-        padding: 20px;
+
+        padding:
+            20px;
+    }
+
+
+    .stats-grid {
+
+        grid-template-columns:
+            1fr;
     }
 
 
