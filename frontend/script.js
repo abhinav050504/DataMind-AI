@@ -1,493 +1,453 @@
 // ============================================================
-// DATA MIND AI - FRONTEND
+// DATAMIND AI - FRONTEND JAVASCRIPT
 // ============================================================
 
 const API_URL = "http://127.0.0.1:8000";
 
+// ============================================================
+// ELEMENTS
+// ============================================================
+
+const fileInput = document.getElementById("fileInput");
+const uploadButton = document.getElementById("uploadButton");
+const fileName = document.getElementById("fileName");
+
+const dashboard = document.getElementById("dashboard");
+
+const totalRecords = document.getElementById("totalRecords");
+const totalColumns = document.getElementById("totalColumns");
+const totalSales = document.getElementById("totalSales");
+const averageSales = document.getElementById("averageSales");
+const bestProduct = document.getElementById("bestProduct");
+const lowestSales = document.getElementById("lowestSales");
+
+const dashboardBars = document.getElementById("dashboardBars");
+
+const questionInput = document.getElementById("questionInput");
+const askButton = document.getElementById("askButton");
+
+const resultContainer = document.getElementById("resultContainer");
+const answerContainer = document.getElementById("answerContainer");
+const chartContainer = document.getElementById("chartContainer");
+
+// ============================================================
+// CURRENT FILE
+// ============================================================
+
 let selectedFile = null;
 
-
 // ============================================================
-// HTML ELEMENTS
-// ============================================================
-
-const fileInput =
-    document.getElementById("fileInput");
-
-const uploadButton =
-    document.getElementById("uploadButton");
-
-const fileName =
-    document.getElementById("fileName");
-
-const questionInput =
-    document.getElementById("questionInput");
-
-const askButton =
-    document.getElementById("askButton");
-
-const resultContainer =
-    document.getElementById("resultContainer");
-
-const answerContainer =
-    document.getElementById("answerContainer");
-
-const chartContainer =
-    document.getElementById("chartContainer");
-
-const dashboard =
-    document.getElementById("dashboard");
-
-const totalRecords =
-    document.getElementById("totalRecords");
-
-const totalColumns =
-    document.getElementById("totalColumns");
-
-const totalSales =
-    document.getElementById("totalSales");
-
-const averageSales =
-    document.getElementById("averageSales");
-
-const bestProduct =
-    document.getElementById("bestProduct");
-
-const lowestSales =
-    document.getElementById("lowestSales");
-
-const dashboardBars =
-    document.getElementById("dashboardBars");
-
-
-// ============================================================
-// FRONTEND LOADED
+// CHOOSE FILE
 // ============================================================
 
-console.log("DataMind AI frontend loaded.");
-
-
-// ============================================================
-// FILE SELECTION
-// ============================================================
-
-if (fileInput) {
-
-    fileInput.addEventListener(
-        "change",
-        function () {
-
-            if (fileInput.files.length === 0) {
-
-                selectedFile = null;
-
-                fileName.textContent =
-                    "No file selected";
-
-                return;
-            }
-
-
-            selectedFile =
-                fileInput.files[0];
-
-
-            if (
-                !selectedFile.name
-                    .toLowerCase()
-                    .endsWith(".csv")
-            ) {
-
-                alert(
-                    "Please select a CSV file."
-                );
-
-                selectedFile = null;
-
-                fileInput.value = "";
-
-                fileName.textContent =
-                    "No file selected";
-
-                return;
-            }
-
-
-            fileName.textContent =
-                selectedFile.name;
-
-
-            console.log(
-                "Selected file:",
-                selectedFile.name
-            );
-
-
-            // Automatically analyze dataset
-            loadDashboard();
-
-        }
-    );
-}
-
+uploadButton.addEventListener("click", function () {
+    fileInput.click();
+});
 
 // ============================================================
-// UPLOAD BUTTON
+// FILE SELECTED
 // ============================================================
 
-if (uploadButton) {
+fileInput.addEventListener("change", async function () {
 
-    uploadButton.addEventListener(
-        "click",
-        function () {
+    const file = fileInput.files[0];
 
-            fileInput.click();
+    if (!file) {
+        return;
+    }
 
-        }
-    );
-}
+    if (!file.name.toLowerCase().endsWith(".csv")) {
 
-
-// ============================================================
-// ASK BUTTON
-// ============================================================
-
-if (askButton) {
-
-    askButton.addEventListener(
-        "click",
-        askQuestion
-    );
-}
-
-
-// ============================================================
-// ENTER KEY
-// ============================================================
-
-if (questionInput) {
-
-    questionInput.addEventListener(
-        "keydown",
-        function (event) {
-
-            if (
-                event.key === "Enter" &&
-                !event.shiftKey
-            ) {
-
-                event.preventDefault();
-
-                askQuestion();
-            }
-
-        }
-    );
-}
-
-
-// ============================================================
-// LOAD AUTOMATIC DASHBOARD
-// ============================================================
-
-async function loadDashboard() {
-
-    if (!selectedFile) {
+        fileName.textContent = "Please select a CSV file.";
 
         return;
     }
 
+    selectedFile = file;
 
-    dashboard.style.display =
-        "block";
+    fileName.textContent = `Selected: ${file.name}`;
 
+    await loadDashboard(file);
+});
 
-    totalRecords.textContent =
-        "...";
+// ============================================================
+// LOAD DASHBOARD
+// ============================================================
 
-    totalColumns.textContent =
-        "...";
+async function loadDashboard(file) {
 
-    totalSales.textContent =
-        "...";
+    dashboard.style.display = "block";
 
-    averageSales.textContent =
-        "...";
+    totalRecords.textContent = "...";
+    totalColumns.textContent = "...";
+    totalSales.textContent = "...";
+    averageSales.textContent = "...";
+    bestProduct.textContent = "...";
+    lowestSales.textContent = "...";
 
-    bestProduct.textContent =
-        "...";
-
-    lowestSales.textContent =
-        "...";
-
-    dashboardBars.innerHTML =
-        "<p>Analyzing dataset...</p>";
-
+    dashboardBars.innerHTML = `
+        <div class="loading-box">
+            <div class="loader"></div>
+            <p>Analyzing your dataset...</p>
+        </div>
+    `;
 
     try {
 
-        const formData =
-            new FormData();
-
-        formData.append(
-            "file",
-            selectedFile
-        );
-
-
         // ----------------------------------------------------
-        // GET DATASET INFORMATION
+        // READ CSV IN BROWSER
         // ----------------------------------------------------
 
-        const infoResponse =
-            await fetch(
-                `${API_URL}/dataset-info`,
-                {
-                    method: "POST",
-                    body: formData
-                }
-            );
+        const text = await file.text();
 
+        const rows = parseCSV(text);
 
-        if (!infoResponse.ok) {
-
-            throw new Error(
-                `Server returned ${infoResponse.status}`
-            );
+        if (rows.length < 2) {
+            throw new Error("The CSV file does not contain enough data.");
         }
 
+        const headers = rows[0];
 
-        const info =
-            await infoResponse.json();
-
-
-        console.log(
-            "Dataset information:",
-            info
-        );
-
-
-        if (!info.success) {
-
-            throw new Error(
-                info.error ||
-                "Could not analyze dataset."
-            );
-        }
-
-
-        totalRecords.textContent =
-            info.rows;
-
-
-        totalColumns.textContent =
-            info.columns;
-
+        const data = rows
+            .slice(1)
+            .filter(row => row.some(value => value.trim() !== ""));
 
         // ----------------------------------------------------
-        // GET BEST PRODUCT / SALES DATA
+        // FIND SALES COLUMN
         // ----------------------------------------------------
 
-        const questionData =
-            new FormData();
-
-        questionData.append(
-            "file",
-            selectedFile
+        const salesColumn = findColumn(
+            headers,
+            [
+                "Sales",
+                "sales",
+                "Sale",
+                "sale",
+                "Revenue",
+                "revenue",
+                "Amount",
+                "amount",
+                "Price",
+                "price",
+                "Value",
+                "value"
+            ]
         );
 
-        questionData.append(
-            "question",
-            "Which product sells the most?"
+        // ----------------------------------------------------
+        // FIND PRODUCT COLUMN
+        // ----------------------------------------------------
+
+        const productColumn = findColumn(
+            headers,
+            [
+                "Product",
+                "product",
+                "Product Name",
+                "product_name",
+                "Item",
+                "item",
+                "Category",
+                "category"
+            ]
         );
 
+        // ----------------------------------------------------
+        // BASIC DATA
+        // ----------------------------------------------------
 
-        const askResponse =
-            await fetch(
-                `${API_URL}/ask`,
-                {
-                    method: "POST",
-                    body: questionData
-                }
-            );
+        totalRecords.textContent = data.length;
+        totalColumns.textContent = headers.length;
 
+        // ----------------------------------------------------
+        // SALES DATA
+        // ----------------------------------------------------
 
-        if (!askResponse.ok) {
+        if (salesColumn !== null) {
 
-            throw new Error(
-                `Server returned ${askResponse.status}`
-            );
-        }
+            const salesIndex = headers.indexOf(salesColumn);
 
+            const salesValues = data
+                .map(row => parseNumber(row[salesIndex]))
+                .filter(value => !isNaN(value));
 
-        const analysis =
-            await askResponse.json();
+            if (salesValues.length > 0) {
 
-
-        console.log(
-            "Automatic analysis:",
-            analysis
-        );
-
-
-        if (
-            analysis.success &&
-            analysis.ranking
-        ) {
-
-            const values =
-                Object.values(
-                    analysis.ranking
-                );
-
-
-            const salesTotal =
-                values.reduce(
-                    (sum, value) =>
-                        sum + Number(value),
+                const total = salesValues.reduce(
+                    (sum, value) => sum + value,
                     0
                 );
 
+                const average = total / salesValues.length;
 
-            const average =
-                values.length > 0
-                    ? salesTotal / values.length
-                    : 0;
+                const maximum = Math.max(...salesValues);
 
+                const minimum = Math.min(...salesValues);
 
-            totalSales.textContent =
-                formatNumber(salesTotal);
+                totalSales.textContent = formatNumber(total);
 
+                averageSales.textContent = formatNumber(average);
 
-            averageSales.textContent =
-                formatNumber(average);
+                lowestSales.textContent = formatNumber(minimum);
 
+                // ------------------------------------------------
+                // PRODUCT ANALYSIS
+                // ------------------------------------------------
 
-            const rankingEntries =
-                Object.entries(
-                    analysis.ranking
-                );
+                if (productColumn !== null) {
 
+                    const productIndex =
+                        headers.indexOf(productColumn);
 
-            if (
-                rankingEntries.length > 0
-            ) {
+                    const productSales = {};
 
-                bestProduct.textContent =
-                    rankingEntries[0][0];
+                    data.forEach(row => {
 
+                        const product =
+                            row[productIndex]?.trim();
 
-                const lowest =
-                    rankingEntries[
-                        rankingEntries.length - 1
-                    ];
+                        const value =
+                            parseNumber(row[salesIndex]);
 
+                        if (
+                            product &&
+                            !isNaN(value)
+                        ) {
 
-                lowestSales.textContent =
-                    formatNumber(
-                        lowest[1]
-                    );
+                            if (!productSales[product]) {
+                                productSales[product] = 0;
+                            }
+
+                            productSales[product] += value;
+                        }
+                    });
+
+                    const ranking =
+                        Object.entries(productSales)
+                            .sort((a, b) => b[1] - a[1]);
+
+                    if (ranking.length > 0) {
+
+                        bestProduct.textContent =
+                            ranking[0][0];
+
+                        renderDashboardChart(ranking);
+
+                        renderInsights(
+                            ranking,
+                            total
+                        );
+
+                    } else {
+
+                        bestProduct.textContent = "N/A";
+
+                        dashboardBars.innerHTML =
+                            "<p>No product data found.</p>";
+                    }
+
+                } else {
+
+                    bestProduct.textContent = "N/A";
+
+                    dashboardBars.innerHTML =
+                        "<p>No product column found.</p>";
+                }
+
+            } else {
+
+                totalSales.textContent = "N/A";
+                averageSales.textContent = "N/A";
+                lowestSales.textContent = "N/A";
+                bestProduct.textContent = "N/A";
+
+                dashboardBars.innerHTML =
+                    "<p>No numeric sales values found.</p>";
             }
-
-
-            displayDashboardChart(
-                analysis.ranking
-            );
 
         } else {
 
+            totalSales.textContent = "N/A";
+            averageSales.textContent = "N/A";
+            lowestSales.textContent = "N/A";
+            bestProduct.textContent = "N/A";
+
             dashboardBars.innerHTML =
-                `
-                <p>
-                    Sales information could not
-                    be detected automatically.
-                </p>
-                `;
+                "<p>No sales column found.</p>";
         }
 
+        // ----------------------------------------------------
+        // DATASET PREVIEW
+        // ----------------------------------------------------
+
+        renderDatasetPreview(
+            headers,
+            data
+        );
 
     } catch (error) {
 
-        console.error(
-            "Dashboard error:",
-            error
-        );
+        console.error(error);
 
-
-        dashboardBars.innerHTML =
-            `
-            <p class="error-text">
-                Could not load dashboard.
-                Make sure the FastAPI backend
-                is running.
-            </p>
-            `;
+        dashboardBars.innerHTML = `
+            <div class="error-box">
+                <strong>Dashboard Error</strong>
+                ${escapeHTML(error.message)}
+            </div>
+        `;
     }
 }
 
+// ============================================================
+// FIND COLUMN
+// ============================================================
+
+function findColumn(headers, possibleNames) {
+
+    for (const name of possibleNames) {
+
+        if (headers.includes(name)) {
+            return name;
+        }
+    }
+
+    return null;
+}
 
 // ============================================================
-// DISPLAY DASHBOARD CHART
+// PARSE NUMBER
 // ============================================================
 
-function displayDashboardChart(
-    ranking
-) {
+function parseNumber(value) {
 
-    const entries =
-        Object.entries(ranking);
+    if (value === undefined || value === null) {
+        return NaN;
+    }
 
+    return Number(
+        String(value)
+            .replace(/₹/g, "")
+            .replace(/,/g, "")
+            .trim()
+    );
+}
 
-    if (entries.length === 0) {
+// ============================================================
+// FORMAT NUMBER
+// ============================================================
+
+function formatNumber(value) {
+
+    return new Intl.NumberFormat("en-IN", {
+        maximumFractionDigits: 2
+    }).format(value);
+}
+
+// ============================================================
+// CSV PARSER
+// ============================================================
+
+function parseCSV(text) {
+
+    const rows = [];
+
+    let row = [];
+    let value = "";
+    let insideQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+
+        const character = text[i];
+        const nextCharacter = text[i + 1];
+
+        if (character === '"' && insideQuotes && nextCharacter === '"') {
+
+            value += '"';
+
+            i++;
+
+        } else if (character === '"') {
+
+            insideQuotes = !insideQuotes;
+
+        } else if (character === "," && !insideQuotes) {
+
+            row.push(value.trim());
+
+            value = "";
+
+        } else if (
+            (character === "\n" || character === "\r") &&
+            !insideQuotes
+        ) {
+
+            if (character === "\r" && nextCharacter === "\n") {
+                i++;
+            }
+
+            row.push(value.trim());
+
+            if (row.some(item => item !== "")) {
+                rows.push(row);
+            }
+
+            row = [];
+            value = "";
+
+        } else {
+
+            value += character;
+        }
+    }
+
+    if (value.length > 0 || row.length > 0) {
+
+        row.push(value.trim());
+
+        if (row.some(item => item !== "")) {
+            rows.push(row);
+        }
+    }
+
+    return rows;
+}
+
+// ============================================================
+// DASHBOARD BAR CHART
+// ============================================================
+
+function renderDashboardChart(ranking) {
+
+    if (!dashboardBars) {
+        return;
+    }
+
+    if (ranking.length === 0) {
 
         dashboardBars.innerHTML =
-            "<p>No sales data available.</p>";
+            "<p>No product data available.</p>";
 
         return;
     }
 
+    const maximum =
+        Math.max(...ranking.map(item => item[1]));
 
-    const values =
-        entries.map(
-            ([, value]) =>
-                Number(value)
-        );
+    const chartHTML = ranking
+        .map(([product, value]) => {
 
+            const percentage =
+                maximum === 0
+                    ? 0
+                    : (value / maximum) * 100;
 
-    const maxValue =
-        Math.max(...values);
-
-
-    let html =
-        `<div class="bar-chart">`;
-
-
-    entries.forEach(
-        function ([product, value]) {
-
-            const numericValue =
-                Number(value);
-
-
-            let percentage =
-                0;
-
-
-            if (maxValue > 0) {
-
-                percentage =
-                    (
-                        numericValue /
-                        maxValue
-                    ) * 100;
-            }
-
-
-            html +=
-                `
+            return `
                 <div class="bar-row">
 
-                    <div class="bar-label">
+                    <div
+                        class="bar-label"
+                        title="${escapeHTML(product)}"
+                    >
                         ${escapeHTML(product)}
                     </div>
 
@@ -501,29 +461,221 @@ function displayDashboardChart(
                     </div>
 
                     <div class="bar-value">
-                        ${formatNumber(numericValue)}
+                        ${formatNumber(value)}
                     </div>
 
                 </div>
-                `;
-        }
-    );
+            `;
+        })
+        .join("");
 
-
-    html +=
-        `</div>`;
-
-
-    dashboardBars.innerHTML =
-        html;
+    dashboardBars.innerHTML = `
+        <div class="bar-chart">
+            ${chartHTML}
+        </div>
+    `;
 }
 
+// ============================================================
+// SMART INSIGHTS
+// ============================================================
+
+function renderInsights(ranking, totalSalesValue) {
+
+    const existing =
+        document.getElementById("smartInsights");
+
+    if (existing) {
+        existing.remove();
+    }
+
+    if (!ranking || ranking.length === 0) {
+        return;
+    }
+
+    const best = ranking[0];
+
+    const worst =
+        ranking[ranking.length - 1];
+
+    const contribution =
+        totalSalesValue > 0
+            ? (best[1] / totalSalesValue) * 100
+            : 0;
+
+    const insightsSection =
+        document.createElement("section");
+
+    insightsSection.id = "smartInsights";
+
+    insightsSection.className = "insights-box";
+
+    insightsSection.innerHTML = `
+        <h3>🧠 Smart Insights</h3>
+
+        <div class="insight-grid">
+
+            <div class="insight-item">
+
+                <div class="insight-title">
+                    🏆 Best-Selling Product
+                </div>
+
+                <div class="insight-value">
+                    ${escapeHTML(best[0])}
+                </div>
+
+            </div>
+
+
+            <div class="insight-item">
+
+                <div class="insight-title">
+                    📈 Best Product Sales
+                </div>
+
+                <div class="insight-value">
+                    ${formatNumber(best[1])}
+                </div>
+
+            </div>
+
+
+            <div class="insight-item">
+
+                <div class="insight-title">
+                    📊 Contribution to Total Sales
+                </div>
+
+                <div class="insight-value">
+                    ${contribution.toFixed(1)}%
+                </div>
+
+            </div>
+
+
+            <div class="insight-item">
+
+                <div class="insight-title">
+                    📉 Lowest-Performing Product
+                </div>
+
+                <div class="insight-value">
+                    ${escapeHTML(worst[0])}
+                </div>
+
+            </div>
+
+        </div>
+    `;
+
+    dashboard.appendChild(insightsSection);
+}
 
 // ============================================================
-// ASK QUESTION
+// DATASET PREVIEW
 // ============================================================
 
-async function askQuestion() {
+function renderDatasetPreview(headers, data) {
+
+    const existing =
+        document.getElementById("datasetPreview");
+
+    if (existing) {
+        existing.remove();
+    }
+
+    const section =
+        document.createElement("section");
+
+    section.id = "datasetPreview";
+
+    section.className = "dataset-box";
+
+    const previewRows =
+        data.slice(0, 10);
+
+    let tableHTML = `
+        <table class="dataset-table">
+
+            <thead>
+                <tr>
+    `;
+
+    headers.forEach(header => {
+
+        tableHTML += `
+            <th>
+                ${escapeHTML(header)}
+            </th>
+        `;
+    });
+
+    tableHTML += `
+                </tr>
+            </thead>
+
+            <tbody>
+    `;
+
+    previewRows.forEach(row => {
+
+        tableHTML += "<tr>";
+
+        headers.forEach((_, index) => {
+
+            const value =
+                row[index] ?? "";
+
+            tableHTML += `
+                <td>
+                    ${escapeHTML(value)}
+                </td>
+            `;
+        });
+
+        tableHTML += "</tr>";
+    });
+
+    tableHTML += `
+            </tbody>
+
+        </table>
+    `;
+
+    section.innerHTML = `
+        <h3>📋 Dataset Preview</h3>
+
+        <div class="dataset-info">
+
+            <div class="info-tag">
+                Rows: ${data.length}
+            </div>
+
+            <div class="info-tag">
+                Columns: ${headers.length}
+            </div>
+
+            <div class="info-tag">
+                Showing first ${Math.min(10, data.length)} rows
+            </div>
+
+        </div>
+
+        ${tableHTML}
+    `;
+
+    dashboard.appendChild(section);
+}
+
+// ============================================================
+// ASK DATA
+// ============================================================
+
+askButton.addEventListener("click", async function () {
+
+    const question =
+        questionInput.value.trim();
 
     if (!selectedFile) {
 
@@ -534,11 +686,6 @@ async function askQuestion() {
         return;
     }
 
-
-    const question =
-        questionInput.value.trim();
-
-
     if (!question) {
 
         showError(
@@ -548,27 +695,43 @@ async function askQuestion() {
         return;
     }
 
-
-    showLoading();
-
-
-    const formData =
-        new FormData();
-
-
-    formData.append(
-        "file",
-        selectedFile
-    );
-
-
-    formData.append(
-        "question",
+    await askBackend(
+        selectedFile,
         question
     );
+});
 
+// ============================================================
+// ASK BACKEND
+// ============================================================
+
+async function askBackend(file, question) {
+
+    resultContainer.style.display = "block";
+
+    answerContainer.innerHTML = `
+        <div class="loading-box">
+
+            <div class="loader"></div>
+
+            <p>
+                DataMind AI is analyzing your question...
+            </p>
+
+        </div>
+    `;
+
+    chartContainer.style.display = "none";
+
+    askButton.disabled = true;
 
     try {
+
+        const formData = new FormData();
+
+        formData.append("file", file);
+
+        formData.append("question", question);
 
         const response =
             await fetch(
@@ -579,263 +742,204 @@ async function askQuestion() {
                 }
             );
 
-
         if (!response.ok) {
 
             throw new Error(
-                `Server returned ${response.status}`
+                `Backend returned HTTP ${response.status}`
             );
         }
 
-
-        const data =
+        const result =
             await response.json();
 
-
-        console.log(
-            "Backend response:",
-            data
-        );
-
-
-        displayResult(data);
-
+        displayAnswer(result);
 
     } catch (error) {
 
-        console.error(
-            "Question error:",
-            error
-        );
-
+        console.error(error);
 
         showError(
-            "Could not connect to the backend. " +
-            "Make sure FastAPI is running."
+            "Could not connect to the DataMind AI backend. " +
+            "Make sure FastAPI is running on port 8000."
         );
+
+    } finally {
+
+        askButton.disabled = false;
     }
 }
 
-
 // ============================================================
-// DISPLAY RESULT
+// DISPLAY ANSWER
 // ============================================================
 
-function displayResult(data) {
+function displayAnswer(result) {
 
-    resultContainer.style.display =
-        "block";
+    if (!result.success) {
 
+        answerContainer.innerHTML = `
+            <div class="error-box">
 
-    if (data.success === false) {
+                <strong>Unable to Analyze</strong>
 
-        const message =
-            data.answer ||
-            data.error ||
-            "Something went wrong.";
+                ${escapeHTML(
+                    result.answer ||
+                    result.error ||
+                    "Unknown error."
+                )}
 
-
-        showError(message);
+            </div>
+        `;
 
         return;
     }
 
-
-    answerContainer.innerHTML =
-        `
+    answerContainer.innerHTML = `
         <div class="answer-box">
 
             <div class="answer-label">
-                AI Answer
+                DataMind AI
             </div>
 
             <div class="answer-text">
-                ${escapeHTML(
-                    data.answer ||
-                    "No answer available."
-                )}
+                ${escapeHTML(result.answer)}
             </div>
 
         </div>
-        `;
+    `;
 
+    // --------------------------------------------------------
+    // RANKING
+    // --------------------------------------------------------
 
-    if (
-        data.ranking &&
-        typeof data.ranking === "object"
-    ) {
+    if (result.ranking) {
 
-        displayRanking(
-            data.ranking
+        renderRanking(
+            result.ranking
         );
     }
 
+    // --------------------------------------------------------
+    // CHART
+    // --------------------------------------------------------
 
-    if (data.chart) {
+    if (
+        result.chart &&
+        result.chart.data
+    ) {
 
-        displayChart(
-            data.chart
+        renderResultChart(
+            result.chart
         );
-
-    } else {
-
-        clearChart();
     }
 }
 
-
 // ============================================================
-// DISPLAY RANKING
+// RANKING
 // ============================================================
 
-function displayRanking(
-    ranking
-) {
-
-    let rankingHTML =
-        `
-        <div class="ranking-box">
-
-            <h3>
-                🏆 Product Ranking
-            </h3>
-
-            <div class="ranking-list">
-        `;
-
+function renderRanking(ranking) {
 
     const entries =
         Object.entries(ranking);
 
+    const rankingBox =
+        document.createElement("div");
+
+    rankingBox.className =
+        "ranking-box";
+
+    let html = `
+        <h3>📊 Product Ranking</h3>
+
+        <div class="ranking-list">
+    `;
 
     entries.forEach(
-        function (
-            [product, value],
-            index
-        ) {
+        ([product, value], index) => {
 
-            rankingHTML +=
-                `
+            html += `
                 <div class="ranking-item">
 
-                    <span class="rank">
+                    <div class="rank">
                         #${index + 1}
-                    </span>
+                    </div>
 
-                    <span class="product-name">
+                    <div class="product-name">
                         ${escapeHTML(product)}
-                    </span>
+                    </div>
 
-                    <span class="product-value">
+                    <div class="product-value">
                         ${formatNumber(value)}
-                    </span>
+                    </div>
 
                 </div>
-                `;
+            `;
         }
     );
 
-
-    rankingHTML +=
-        `
-            </div>
-
+    html += `
         </div>
-        `;
+    `;
 
+    rankingBox.innerHTML = html;
 
-    answerContainer.innerHTML +=
-        rankingHTML;
+    answerContainer.appendChild(
+        rankingBox
+    );
 }
 
-
 // ============================================================
-// DISPLAY QUESTION CHART
+// RESULT CHART
 // ============================================================
 
-function displayChart(chart) {
+function renderResultChart(chart) {
 
     chartContainer.style.display =
         "block";
 
-
     const data =
         chart.data || [];
-
 
     if (data.length === 0) {
 
         chartContainer.innerHTML =
-            `
-            <div class="chart-box">
-                No chart data available.
-            </div>
-            `;
+            "<p>No chart data available.</p>";
 
         return;
     }
 
-
-    const values =
-        data.map(
-            item =>
-                Number(item.value)
+    const maximum =
+        Math.max(
+            ...data.map(item => Number(item.value))
         );
 
-
-    const maxValue =
-        Math.max(...values);
-
-
-    let html =
-        `
-        <div class="chart-box">
-
-            <h3>
-                📊 ${escapeHTML(
-                    chart.title ||
-                    "Data Chart"
-                )}
-            </h3>
-
-            <div class="bar-chart">
-        `;
-
-
-    data.forEach(
-        function (item) {
+    const rows =
+        data.map(item => {
 
             const value =
                 Number(item.value);
 
+            const width =
+                maximum === 0
+                    ? 0
+                    : (value / maximum) * 100;
 
-            let percentage =
-                0;
-
-
-            if (maxValue > 0) {
-
-                percentage =
-                    (value / maxValue) *
-                    100;
-            }
-
-
-            html +=
-                `
+            return `
                 <div class="bar-row">
 
-                    <div class="bar-label">
-                        ${escapeHTML(
-                            item.category
-                        )}
+                    <div
+                        class="bar-label"
+                        title="${escapeHTML(item.category)}"
+                    >
+                        ${escapeHTML(item.category)}
                     </div>
 
                     <div class="bar-wrapper">
 
                         <div
                             class="bar"
-                            style="width: ${percentage}%"
+                            style="width: ${width}%"
                         ></div>
 
                     </div>
@@ -845,140 +949,77 @@ function displayChart(chart) {
                     </div>
 
                 </div>
-                `;
-        }
-    );
+            `;
+        }).join("");
 
+    chartContainer.innerHTML = `
+        <div class="chart-box">
 
-    html +=
-        `
+            <h3>
+                📊 ${escapeHTML(chart.title || "Chart")}
+            </h3>
+
+            <div class="bar-chart">
+                ${rows}
             </div>
 
         </div>
-        `;
-
-
-    chartContainer.innerHTML =
-        html;
+    `;
 }
-
-
-// ============================================================
-// CLEAR CHART
-// ============================================================
-
-function clearChart() {
-
-    chartContainer.innerHTML =
-        "";
-
-    chartContainer.style.display =
-        "none";
-}
-
-
-// ============================================================
-// LOADING
-// ============================================================
-
-function showLoading() {
-
-    resultContainer.style.display =
-        "block";
-
-
-    answerContainer.innerHTML =
-        `
-        <div class="loading-box">
-
-            <div class="loader"></div>
-
-            <p>
-                Analyzing your data...
-            </p>
-
-        </div>
-        `;
-
-
-    clearChart();
-}
-
 
 // ============================================================
 // ERROR
 // ============================================================
 
-function showError(
-    message
-) {
+function showError(message) {
 
     resultContainer.style.display =
         "block";
 
+    chartContainer.style.display =
+        "none";
 
-    answerContainer.innerHTML =
-        `
+    answerContainer.innerHTML = `
         <div class="error-box">
 
-            <strong>
-                Error
-            </strong>
+            <strong>Error</strong>
 
-            <p>
-                ${escapeHTML(message)}
-            </p>
+            ${escapeHTML(message)}
 
         </div>
-        `;
-
-
-    clearChart();
+    `;
 }
 
+// ============================================================
+// HTML ESCAPE
+// ============================================================
+
+function escapeHTML(value) {
+
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
 
 // ============================================================
-// FORMAT NUMBER
+// ENTER KEY
 // ============================================================
 
-function formatNumber(
-    value
-) {
+questionInput.addEventListener(
+    "keydown",
+    function (event) {
 
-    const number =
-        Number(value);
+        if (
+            event.key === "Enter" &&
+            !event.shiftKey
+        ) {
 
+            event.preventDefault();
 
-    if (Number.isNaN(number)) {
-
-        return "0";
-    }
-
-
-    return number.toLocaleString(
-        "en-IN",
-        {
-            maximumFractionDigits: 2
+            askButton.click();
         }
-    );
-}
-
-
-// ============================================================
-// ESCAPE HTML
-// ============================================================
-
-function escapeHTML(
-    value
-) {
-
-    const div =
-        document.createElement("div");
-
-
-    div.textContent =
-        String(value);
-
-
-    return div.innerHTML;
-}
+    }
+);

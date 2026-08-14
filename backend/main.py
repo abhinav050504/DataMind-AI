@@ -81,7 +81,9 @@ def find_sales_column(df):
         "Price",
         "price",
         "Value",
-        "value"
+        "value",
+        "Total Sales",
+        "total_sales"
     ]
 
     for column in possible_columns:
@@ -93,6 +95,20 @@ def find_sales_column(df):
             ):
 
                 return column
+
+    # Automatic fallback:
+    # Find the first numeric column if no common
+    # sales column name exists.
+
+    numeric_columns = list(
+        df.select_dtypes(
+            include="number"
+        ).columns
+    )
+
+    if numeric_columns:
+
+        return numeric_columns[0]
 
     return None
 
@@ -111,7 +127,9 @@ def find_product_column(df):
         "Item",
         "item",
         "Category",
-        "category"
+        "category",
+        "ProductName",
+        "productname"
     ]
 
     for column in possible_columns:
@@ -120,62 +138,579 @@ def find_product_column(df):
 
             return column
 
-    return None
+    # Automatic fallback:
+    # Find a text column with relatively few unique values.
 
-
-# ============================================================
-# FIND NUMERIC COLUMN
-# ============================================================
-
-def find_numeric_column(df):
-
-    numeric_columns = list(
+    object_columns = list(
         df.select_dtypes(
-            include="number"
+            include=["object", "string"]
         ).columns
     )
 
-    if numeric_columns:
+    for column in object_columns:
 
-        return numeric_columns[0]
+        if df[column].nunique() <= max(
+            50,
+            len(df) * 0.5
+        ):
+
+            return column
 
     return None
 
 
 # ============================================================
-# CREATE BAR CHART DATA
+# CLEAN NUMERIC SALES DATA
 # ============================================================
 
-def create_chart_data(
-    df,
-    category_column,
-    value_column
-):
+def clean_sales_column(df, sales_column):
 
-    grouped = (
-        df.groupby(category_column)[value_column]
+    if not sales_column:
+        return df
+
+    df[sales_column] = pd.to_numeric(
+        df[sales_column],
+        errors="coerce"
+    )
+
+    return df
+
+
+# ============================================================
+# CREATE PRODUCT ANALYSIS
+# ============================================================
+
+def create_product_analysis(df, product_column, sales_column):
+
+    if not product_column or not sales_column:
+
+        return {
+            "ranking": {},
+            "chart": [],
+            "best_product": None,
+            "best_value": None,
+            "worst_product": None,
+            "worst_value": None,
+            "best_percentage": 0
+        }
+
+    valid_df = df[
+        df[product_column].notna()
+        & df[sales_column].notna()
+    ].copy()
+
+    if valid_df.empty:
+
+        return {
+            "ranking": {},
+            "chart": [],
+            "best_product": None,
+            "best_value": None,
+            "worst_product": None,
+            "worst_value": None,
+            "best_percentage": 0
+        }
+
+    ranking = (
+        valid_df
+        .groupby(product_column)[sales_column]
         .sum()
         .sort_values(
             ascending=False
         )
     )
 
+    ranking_data = {}
+
     chart_data = []
 
-    for category, value in grouped.items():
+    for product, value in ranking.items():
+
+        product_name = str(product)
+        numeric_value = float(value)
+
+        ranking_data[product_name] = round(
+            numeric_value,
+            2
+        )
 
         chart_data.append(
             {
-                "category": str(category),
-
+                "category": product_name,
                 "value": round(
-                    float(value),
+                    numeric_value,
                     2
                 )
             }
         )
 
-    return chart_data
+    best_product = str(
+        ranking.index[0]
+    )
+
+    best_value = float(
+        ranking.iloc[0]
+    )
+
+    worst_product = str(
+        ranking.index[-1]
+    )
+
+    worst_value = float(
+        ranking.iloc[-1]
+    )
+
+    total_sales = float(
+        ranking.sum()
+    )
+
+    if total_sales != 0:
+
+        best_percentage = (
+            best_value /
+            total_sales
+        ) * 100
+
+    else:
+
+        best_percentage = 0
+
+    return {
+
+        "ranking": ranking_data,
+
+        "chart": chart_data,
+
+        "best_product": best_product,
+
+        "best_value": round(
+            best_value,
+            2
+        ),
+
+        "worst_product": worst_product,
+
+        "worst_value": round(
+            worst_value,
+            2
+        ),
+
+        "best_percentage": round(
+            best_percentage,
+            2
+        )
+    }
+
+
+# ============================================================
+# DASHBOARD ANALYSIS
+# ============================================================
+
+def analyze_dataset(df):
+
+    # --------------------------------------------------------
+    # BASIC INFORMATION
+    # --------------------------------------------------------
+
+    rows = len(df)
+
+    columns = len(df.columns)
+
+    column_names = [
+        str(column)
+        for column in df.columns
+    ]
+
+
+    # --------------------------------------------------------
+    # FIND SALES + PRODUCT
+    # --------------------------------------------------------
+
+    sales_column = find_sales_column(df)
+
+    product_column = find_product_column(df)
+
+
+    # --------------------------------------------------------
+    # CLEAN SALES
+    # --------------------------------------------------------
+
+    df = clean_sales_column(
+        df,
+        sales_column
+    )
+
+
+    # --------------------------------------------------------
+    # SALES KPI
+    # --------------------------------------------------------
+
+    total_sales = 0
+
+    average_sales = 0
+
+    maximum_sales = 0
+
+    minimum_sales = 0
+
+    valid_sales_count = 0
+
+
+    if sales_column:
+
+        sales_data = df[
+            sales_column
+        ].dropna()
+
+        valid_sales_count = len(
+            sales_data
+        )
+
+        if not sales_data.empty:
+
+            total_sales = float(
+                sales_data.sum()
+            )
+
+            average_sales = float(
+                sales_data.mean()
+            )
+
+            maximum_sales = float(
+                sales_data.max()
+            )
+
+            minimum_sales = float(
+                sales_data.min()
+            )
+
+
+    # --------------------------------------------------------
+    # PRODUCT ANALYSIS
+    # --------------------------------------------------------
+
+    product_analysis = (
+        create_product_analysis(
+            df,
+            product_column,
+            sales_column
+        )
+    )
+
+
+    # --------------------------------------------------------
+    # DATA TYPES
+    # --------------------------------------------------------
+
+    data_types = {
+
+        str(column):
+            str(df[column].dtype)
+
+        for column in df.columns
+
+    }
+
+
+    # --------------------------------------------------------
+    # MISSING VALUES
+    # --------------------------------------------------------
+
+    missing_values = {
+
+        str(column):
+            int(
+                df[column].isna().sum()
+            )
+
+        for column in df.columns
+
+    }
+
+
+    # --------------------------------------------------------
+    # DUPLICATES
+    # --------------------------------------------------------
+
+    duplicate_rows = int(
+        df.duplicated().sum()
+    )
+
+
+    # --------------------------------------------------------
+    # DATASET PREVIEW
+    # --------------------------------------------------------
+
+    preview_df = df.head(10).copy()
+
+    preview_df = preview_df.fillna("")
+
+    preview = []
+
+    for _, row in preview_df.iterrows():
+
+        row_data = {}
+
+        for column in df.columns:
+
+            value = row[column]
+
+            if hasattr(value, "item"):
+
+                try:
+                    value = value.item()
+                except Exception:
+                    pass
+
+            row_data[str(column)] = str(
+                value
+            )
+
+        preview.append(
+            row_data
+        )
+
+
+    # --------------------------------------------------------
+    # NUMERIC COLUMNS
+    # --------------------------------------------------------
+
+    numeric_columns = [
+
+        str(column)
+
+        for column in
+        df.select_dtypes(
+            include="number"
+        ).columns
+
+    ]
+
+
+    # --------------------------------------------------------
+    # SMART INSIGHTS
+    # --------------------------------------------------------
+
+    insights = []
+
+
+    if product_analysis["best_product"]:
+
+        insights.append(
+            f"Best-selling product: "
+            f"{product_analysis['best_product']} "
+            f"with {product_analysis['best_value']:.2f} "
+            f"{sales_column}."
+        )
+
+
+    if product_analysis["worst_product"]:
+
+        insights.append(
+            f"Worst-performing product: "
+            f"{product_analysis['worst_product']} "
+            f"with {product_analysis['worst_value']:.2f} "
+            f"{sales_column}."
+        )
+
+
+    if product_analysis["best_product"]:
+
+        insights.append(
+            f"The best-selling product contributes "
+            f"{product_analysis['best_percentage']:.2f}% "
+            f"of total product sales."
+        )
+
+
+    if duplicate_rows > 0:
+
+        insights.append(
+            f"The dataset contains "
+            f"{duplicate_rows} duplicate rows."
+        )
+
+    else:
+
+        insights.append(
+            "No duplicate rows were detected."
+        )
+
+
+    missing_count = sum(
+        missing_values.values()
+    )
+
+
+    if missing_count > 0:
+
+        insights.append(
+            f"The dataset contains "
+            f"{missing_count} missing values."
+        )
+
+    else:
+
+        insights.append(
+            "No missing values were detected."
+        )
+
+
+    # --------------------------------------------------------
+    # RETURN COMPLETE DASHBOARD
+    # --------------------------------------------------------
+
+    return {
+
+        "success": True,
+
+        "rows": rows,
+
+        "columns": columns,
+
+        "column_names": column_names,
+
+        "sales_column": sales_column,
+
+        "product_column": product_column,
+
+        "total_sales": round(
+            total_sales,
+            2
+        ),
+
+        "average_sales": round(
+            average_sales,
+            2
+        ),
+
+        "maximum_sales": round(
+            maximum_sales,
+            2
+        ),
+
+        "minimum_sales": round(
+            minimum_sales,
+            2
+        ),
+
+        "valid_sales_records":
+            valid_sales_count,
+
+        "best_product":
+            product_analysis[
+                "best_product"
+            ],
+
+        "best_product_sales":
+            product_analysis[
+                "best_value"
+            ],
+
+        "worst_product":
+            product_analysis[
+                "worst_product"
+            ],
+
+        "worst_product_sales":
+            product_analysis[
+                "worst_value"
+            ],
+
+        "best_product_percentage":
+            product_analysis[
+                "best_percentage"
+            ],
+
+        "ranking":
+            product_analysis[
+                "ranking"
+            ],
+
+        "chart": {
+
+            "chart_type": "bar",
+
+            "title": (
+                f"{sales_column} by "
+                f"{product_column}"
+                if sales_column
+                and product_column
+                else "Sales by Product"
+            ),
+
+            "x_axis":
+                product_column,
+
+            "y_axis":
+                sales_column,
+
+            "data":
+                product_analysis[
+                    "chart"
+                ]
+        },
+
+        "preview": preview,
+
+        "data_types": data_types,
+
+        "missing_values":
+            missing_values,
+
+        "duplicate_rows":
+            duplicate_rows,
+
+        "numeric_columns":
+            numeric_columns,
+
+        "insights":
+            insights
+    }
+
+
+# ============================================================
+# DASHBOARD ENDPOINT
+# ============================================================
+
+@app.post("/analyze")
+async def analyze(
+    file: UploadFile = File(...)
+):
+
+    if not file.filename.lower().endswith(".csv"):
+
+        return {
+
+            "success": False,
+
+            "answer":
+                "Please upload a CSV file."
+
+        }
+
+
+    try:
+
+        df = await read_csv(file)
+
+        return analyze_dataset(df)
+
+
+    except Exception as e:
+
+        return {
+
+            "success": False,
+
+            "answer":
+                "An error occurred while "
+                "analyzing your dataset.",
+
+            "error":
+                str(e)
+
+        }
 
 
 # ============================================================
@@ -188,64 +723,40 @@ async def ask_question(
     question: str = Form(...)
 ):
 
-    # --------------------------------------------------------
-    # CHECK FILE
-    # --------------------------------------------------------
-
-    if not file.filename:
-
-        return {
-            "success": False,
-            "answer": "Please upload a CSV file."
-        }
-
-
     if not file.filename.lower().endswith(".csv"):
 
         return {
+
             "success": False,
-            "answer": "Please upload a CSV file."
+
+            "answer":
+                "Please upload a CSV file."
+
         }
 
 
     try:
 
-        # ----------------------------------------------------
-        # READ DATA
-        # ----------------------------------------------------
-
         df = await read_csv(file)
 
-
-        if df.empty:
-
-            return {
-                "success": False,
-                "answer": "The uploaded CSV file is empty."
-            }
-
-
-        # ----------------------------------------------------
-        # QUESTION
-        # ----------------------------------------------------
-
-        question_original = question.strip()
+        question_original = (
+            question.strip()
+        )
 
         q = question_original.lower()
-
-
-        # ----------------------------------------------------
-        # FIND IMPORTANT COLUMNS
-        # ----------------------------------------------------
 
         sales_column = find_sales_column(df)
 
         product_column = find_product_column(df)
 
+        df = clean_sales_column(
+            df,
+            sales_column
+        )
+
 
         # ====================================================
-        # QUESTION 1
-        # WHICH PRODUCT SELLS THE MOST?
+        # BEST PRODUCT
         # ====================================================
 
         if (
@@ -256,18 +767,15 @@ async def ask_question(
             or "top product" in q
             or "highest selling" in q
             or "most popular" in q
-            or "best product" in q
-            or "which product sells" in q
         ):
 
             if not product_column:
 
                 return {
                     "success": False,
-                    "answer": (
-                        "I could not find a product column "
-                        "in your dataset."
-                    )
+                    "answer":
+                        "I could not find a product "
+                        "column in your dataset."
                 }
 
 
@@ -275,46 +783,13 @@ async def ask_question(
 
                 return {
                     "success": False,
-                    "answer": (
-                        "I could not find a numeric sales "
-                        "column in your dataset."
-                    )
+                    "answer":
+                        "I could not find a numeric "
+                        "sales column."
                 }
 
 
-            ranking = (
-                df.groupby(product_column)[sales_column]
-                .sum()
-                .sort_values(
-                    ascending=False
-                )
-            )
-
-
-            if ranking.empty:
-
-                return {
-                    "success": False,
-                    "answer": "No product sales data was found."
-                }
-
-
-            best_product = ranking.index[0]
-
-            best_value = ranking.iloc[0]
-
-
-            ranking_data = {}
-
-            for product, value in ranking.items():
-
-                ranking_data[str(product)] = round(
-                    float(value),
-                    2
-                )
-
-
-            chart_data = create_chart_data(
+            analysis = create_product_analysis(
                 df,
                 product_column,
                 sales_column
@@ -325,41 +800,49 @@ async def ask_question(
 
                 "success": True,
 
-                "question": question_original,
+                "question":
+                    question_original,
 
                 "answer": (
-                    f"{best_product} is the "
-                    f"best-selling product with "
-                    f"{best_value:.2f} "
+                    f"{analysis['best_product']} "
+                    f"is the best-selling product "
+                    f"with "
+                    f"{analysis['best_value']:.2f} "
                     f"{sales_column}."
                 ),
 
-                "product_column": product_column,
+                "product_column":
+                    product_column,
 
-                "sales_column": sales_column,
+                "sales_column":
+                    sales_column,
 
-                "ranking": ranking_data,
+                "ranking":
+                    analysis["ranking"],
 
                 "chart": {
 
                     "chart_type": "bar",
 
-                    "title": (
+                    "title":
                         f"{sales_column} by "
-                        f"{product_column}"
-                    ),
+                        f"{product_column}",
 
-                    "x_axis": product_column,
+                    "x_axis":
+                        product_column,
 
-                    "y_axis": sales_column,
+                    "y_axis":
+                        sales_column,
 
-                    "data": chart_data
+                    "data":
+                        analysis["chart"]
+
                 }
+
             }
 
 
         # ====================================================
-        # QUESTION 2
         # TOTAL SALES
         # ====================================================
 
@@ -369,29 +852,29 @@ async def ask_question(
             or "sum of sales" in q
             or "sales total" in q
             or "how much sales" in q
-            or "total revenue" in q
-            or "total amount" in q
         ):
 
             if not sales_column:
 
                 return {
                     "success": False,
-                    "answer": (
-                        "I could not find a numeric sales "
-                        "column in your dataset."
-                    )
+                    "answer":
+                        "I could not find a numeric "
+                        "sales column."
                 }
 
 
-            total = df[sales_column].sum()
+            total = df[
+                sales_column
+            ].sum()
 
 
             return {
 
                 "success": True,
 
-                "question": question_original,
+                "question":
+                    question_original,
 
                 "answer": (
                     f"The total "
@@ -399,17 +882,19 @@ async def ask_question(
                     f"is {total:.2f}."
                 ),
 
-                "sales_column": sales_column,
+                "sales_column":
+                    sales_column,
 
-                "total": round(
-                    float(total),
-                    2
-                )
+                "total":
+                    round(
+                        float(total),
+                        2
+                    )
+
             }
 
 
         # ====================================================
-        # QUESTION 3
         # AVERAGE SALES
         # ====================================================
 
@@ -424,21 +909,23 @@ async def ask_question(
 
                 return {
                     "success": False,
-                    "answer": (
-                        "I could not find a numeric sales "
-                        "column in your dataset."
-                    )
+                    "answer":
+                        "I could not find a numeric "
+                        "sales column."
                 }
 
 
-            average = df[sales_column].mean()
+            average = df[
+                sales_column
+            ].mean()
 
 
             return {
 
                 "success": True,
 
-                "question": question_original,
+                "question":
+                    question_original,
 
                 "answer": (
                     f"The average "
@@ -446,17 +933,19 @@ async def ask_question(
                     f"is {average:.2f}."
                 ),
 
-                "sales_column": sales_column,
+                "sales_column":
+                    sales_column,
 
-                "average": round(
-                    float(average),
-                    2
-                )
+                "average":
+                    round(
+                        float(average),
+                        2
+                    )
+
             }
 
 
         # ====================================================
-        # QUESTION 4
         # MAXIMUM SALES
         # ====================================================
 
@@ -466,28 +955,29 @@ async def ask_question(
             or "highest sales" in q
             or "highest sale" in q
             or "maximum sale" in q
-            or "max sale" in q
         ):
 
             if not sales_column:
 
                 return {
                     "success": False,
-                    "answer": (
-                        "I could not find a numeric sales "
-                        "column in your dataset."
-                    )
+                    "answer":
+                        "I could not find a numeric "
+                        "sales column."
                 }
 
 
-            maximum = df[sales_column].max()
+            maximum = df[
+                sales_column
+            ].max()
 
 
             return {
 
                 "success": True,
 
-                "question": question_original,
+                "question":
+                    question_original,
 
                 "answer": (
                     f"The highest "
@@ -495,17 +985,19 @@ async def ask_question(
                     f"is {maximum:.2f}."
                 ),
 
-                "sales_column": sales_column,
+                "sales_column":
+                    sales_column,
 
-                "maximum": round(
-                    float(maximum),
-                    2
-                )
+                "maximum":
+                    round(
+                        float(maximum),
+                        2
+                    )
+
             }
 
 
         # ====================================================
-        # QUESTION 5
         # MINIMUM SALES
         # ====================================================
 
@@ -515,28 +1007,29 @@ async def ask_question(
             or "lowest sales" in q
             or "lowest sale" in q
             or "minimum sale" in q
-            or "min sale" in q
         ):
 
             if not sales_column:
 
                 return {
                     "success": False,
-                    "answer": (
-                        "I could not find a numeric sales "
-                        "column in your dataset."
-                    )
+                    "answer":
+                        "I could not find a numeric "
+                        "sales column."
                 }
 
 
-            minimum = df[sales_column].min()
+            minimum = df[
+                sales_column
+            ].min()
 
 
             return {
 
                 "success": True,
 
-                "question": question_original,
+                "question":
+                    question_original,
 
                 "answer": (
                     f"The lowest "
@@ -544,17 +1037,19 @@ async def ask_question(
                     f"is {minimum:.2f}."
                 ),
 
-                "sales_column": sales_column,
+                "sales_column":
+                    sales_column,
 
-                "minimum": round(
-                    float(minimum),
-                    2
-                )
+                "minimum":
+                    round(
+                        float(minimum),
+                        2
+                    )
+
             }
 
 
         # ====================================================
-        # QUESTION 6
         # NUMBER OF RECORDS
         # ====================================================
 
@@ -564,8 +1059,6 @@ async def ask_question(
             or "how many records" in q
             or "how many rows" in q
             or "count records" in q
-            or "record count" in q
-            or "how many entries" in q
         ):
 
             count = len(df)
@@ -575,19 +1068,21 @@ async def ask_question(
 
                 "success": True,
 
-                "question": question_original,
+                "question":
+                    question_original,
 
                 "answer": (
                     f"Your dataset contains "
                     f"{count} records."
                 ),
 
-                "records": count
+                "records":
+                    count
+
             }
 
 
         # ====================================================
-        # QUESTION 7
         # TOP 3 PRODUCTS
         # ====================================================
 
@@ -596,17 +1091,15 @@ async def ask_question(
             or "top three products" in q
             or "best 3 products" in q
             or "best three products" in q
-            or "top three product" in q
-            or "top 3 product" in q
         ):
 
             if not product_column:
 
                 return {
                     "success": False,
-                    "answer": (
-                        "I could not find a product column."
-                    )
+                    "answer":
+                        "I could not find a product "
+                        "column."
                 }
 
 
@@ -614,15 +1107,16 @@ async def ask_question(
 
                 return {
                     "success": False,
-                    "answer": (
-                        "I could not find a numeric sales "
-                        "column."
-                    )
+                    "answer":
+                        "I could not find a numeric "
+                        "sales column."
                 }
 
 
             ranking = (
-                df.groupby(product_column)[sales_column]
+                df.groupby(
+                    product_column
+                )[sales_column]
                 .sum()
                 .sort_values(
                     ascending=False
@@ -635,25 +1129,11 @@ async def ask_question(
 
             for product, value in ranking.items():
 
-                top_products[str(product)] = round(
+                top_products[
+                    str(product)
+                ] = round(
                     float(value),
                     2
-                )
-
-
-            chart_data = []
-
-            for product, value in ranking.items():
-
-                chart_data.append(
-                    {
-                        "category": str(product),
-
-                        "value": round(
-                            float(value),
-                            2
-                        )
-                    }
                 )
 
 
@@ -661,32 +1141,20 @@ async def ask_question(
 
                 "success": True,
 
-                "question": question_original,
+                "question":
+                    question_original,
 
-                "answer": (
+                "answer":
                     "Here are the top 3 "
-                    "best-selling products."
-                ),
+                    "best-selling products.",
 
-                "ranking": top_products,
+                "ranking":
+                    top_products
 
-                "chart": {
-
-                    "chart_type": "bar",
-
-                    "title": "Top 3 Products",
-
-                    "x_axis": product_column,
-
-                    "y_axis": sales_column,
-
-                    "data": chart_data
-                }
             }
 
 
         # ====================================================
-        # QUESTION 8
         # SALES BY PRODUCT
         # ====================================================
 
@@ -695,17 +1163,15 @@ async def ask_question(
             or "show sales by product" in q
             or "sales per product" in q
             or "product sales" in q
-            or "sales for each product" in q
-            or "sales of each product" in q
         ):
 
             if not product_column:
 
                 return {
                     "success": False,
-                    "answer": (
-                        "I could not find a product column."
-                    )
+                    "answer":
+                        "I could not find a product "
+                        "column."
                 }
 
 
@@ -713,43 +1179,25 @@ async def ask_question(
 
                 return {
                     "success": False,
-                    "answer": (
-                        "I could not find a numeric sales "
-                        "column."
-                    )
+                    "answer":
+                        "I could not find a numeric "
+                        "sales column."
                 }
 
 
-            grouped = (
-                df.groupby(product_column)[sales_column]
-                .sum()
-                .sort_values(
-                    ascending=False
-                )
+            analysis = create_product_analysis(
+                df,
+                product_column,
+                sales_column
             )
-
-
-            chart_data = []
-
-            for product, value in grouped.items():
-
-                chart_data.append(
-                    {
-                        "category": str(product),
-
-                        "value": round(
-                            float(value),
-                            2
-                        )
-                    }
-                )
 
 
             return {
 
                 "success": True,
 
-                "question": question_original,
+                "question":
+                    question_original,
 
                 "answer": (
                     f"Here is the "
@@ -760,24 +1208,28 @@ async def ask_question(
 
                 "chart": {
 
-                    "chart_type": "bar",
+                    "chart_type":
+                        "bar",
 
-                    "title": (
+                    "title":
                         f"{sales_column} by "
-                        f"{product_column}"
-                    ),
+                        f"{product_column}",
 
-                    "x_axis": product_column,
+                    "x_axis":
+                        product_column,
 
-                    "y_axis": sales_column,
+                    "y_axis":
+                        sales_column,
 
-                    "data": chart_data
+                    "data":
+                        analysis["chart"]
+
                 }
+
             }
 
 
         # ====================================================
-        # QUESTION 9
         # DATASET SUMMARY
         # ====================================================
 
@@ -787,22 +1239,14 @@ async def ask_question(
             or "summarize the data" in q
             or "summary of data" in q
             or q == "summary"
-            or "summarize dataset" in q
-            or "give me a dataset summary" in q
         ):
-
-            numeric_columns = list(
-                df.select_dtypes(
-                    include="number"
-                ).columns
-            )
-
 
             return {
 
                 "success": True,
 
-                "question": question_original,
+                "question":
+                    question_original,
 
                 "answer": (
                     f"Your dataset has "
@@ -810,52 +1254,17 @@ async def ask_question(
                     f"{len(df.columns)} columns."
                 ),
 
-                "rows": len(df),
+                "rows":
+                    len(df),
 
-                "columns": len(df.columns),
+                "columns":
+                    len(df.columns),
 
                 "column_names": [
                     str(column)
                     for column in df.columns
-                ],
-
-                "numeric_columns": [
-                    str(column)
-                    for column in numeric_columns
                 ]
-            }
 
-
-        # ====================================================
-        # QUESTION 10
-        # SHOW ALL DATA
-        # ====================================================
-
-        if (
-            "show data" in q
-            or "show dataset" in q
-            or "display data" in q
-            or "display dataset" in q
-        ):
-
-            preview = df.head(20).fillna("").to_dict(
-                orient="records"
-            )
-
-
-            return {
-
-                "success": True,
-
-                "question": question_original,
-
-                "answer": (
-                    "Here is a preview of your dataset."
-                ),
-
-                "rows": len(df),
-
-                "preview": preview
             }
 
 
@@ -867,7 +1276,8 @@ async def ask_question(
 
             "success": False,
 
-            "question": question_original,
+            "question":
+                question_original,
 
             "answer": (
                 "I don't understand this question yet. "
@@ -880,9 +1290,9 @@ async def ask_question(
                 "'How many records are there?', "
                 "'Show me the top 3 products', "
                 "'Show me sales by product', "
-                "'Show me the dataset', "
                 "or 'Give me a dataset summary'."
             )
+
         }
 
 
@@ -892,14 +1302,16 @@ async def ask_question(
 
             "success": False,
 
-            "question": question_original,
+            "question":
+                question_original,
 
-            "answer": (
+            "answer":
                 "An error occurred while analyzing "
-                "your dataset."
-            ),
+                "your dataset.",
 
-            "error": str(e)
+            "error":
+                str(e)
+
         }
 
 
@@ -917,8 +1329,12 @@ async def generate_chart(
     if not file.filename.lower().endswith(".csv"):
 
         return {
+
             "success": False,
-            "error": "Please upload a CSV file."
+
+            "error":
+                "Please upload a CSV file."
+
         }
 
 
@@ -934,22 +1350,26 @@ async def generate_chart(
         if column not in df.columns:
 
             return {
+
                 "success": False,
-                "error": (
+
+                "error":
                     f"Column '{column}' "
                     f"was not found."
-                )
+
             }
 
 
         if value_column not in df.columns:
 
             return {
+
                 "success": False,
-                "error": (
+
+                "error":
                     f"Column '{value_column}' "
                     f"was not found."
-                )
+
             }
 
 
@@ -958,36 +1378,64 @@ async def generate_chart(
         ):
 
             return {
+
                 "success": False,
-                "error": (
+
+                "error":
                     f"'{value_column}' must be "
                     f"a numeric column."
-                )
+
             }
 
 
-        chart_data = create_chart_data(
-            df,
-            column,
-            value_column
+        grouped = (
+            df.groupby(column)[value_column]
+            .sum()
+            .sort_values(
+                ascending=False
+            )
         )
+
+
+        chart_data = []
+
+        for category, value in grouped.items():
+
+            chart_data.append(
+                {
+
+                    "category":
+                        str(category),
+
+                    "value":
+                        round(
+                            float(value),
+                            2
+                        )
+
+                }
+            )
 
 
         return {
 
             "success": True,
 
-            "chart_type": "bar",
+            "chart_type":
+                "bar",
 
-            "title": (
-                f"{value_column} by {column}"
-            ),
+            "title":
+                f"{value_column} by {column}",
 
-            "x_axis": column,
+            "x_axis":
+                column,
 
-            "y_axis": value_column,
+            "y_axis":
+                value_column,
 
-            "data": chart_data
+            "data":
+                chart_data
+
         }
 
 
@@ -997,7 +1445,9 @@ async def generate_chart(
 
             "success": False,
 
-            "error": str(e)
+            "error":
+                str(e)
+
         }
 
 
@@ -1016,7 +1466,9 @@ async def dataset_info(
 
             "success": False,
 
-            "error": "Please upload a CSV file."
+            "error":
+                "Please upload a CSV file."
+
         }
 
 
@@ -1024,14 +1476,15 @@ async def dataset_info(
 
         df = await read_csv(file)
 
-
         return {
 
             "success": True,
 
-            "rows": len(df),
+            "rows":
+                len(df),
 
-            "columns": len(df.columns),
+            "columns":
+                len(df.columns),
 
             "column_names": [
                 str(column)
@@ -1050,7 +1503,9 @@ async def dataset_info(
             "missing_values": {
 
                 str(column):
-                    int(df[column].isna().sum())
+                    int(
+                        df[column].isna().sum()
+                    )
 
                 for column in df.columns
 
@@ -1065,6 +1520,7 @@ async def dataset_info(
 
             "success": False,
 
-            "error": str(e)
+            "error":
+                str(e)
 
         }

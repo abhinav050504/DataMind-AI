@@ -1,5 +1,5 @@
 /* ============================================================
-   GLOBAL
+   DATAMIND AI - DASHBOARD STYLES
 ============================================================ */
 
 * {
@@ -8,669 +8,442 @@
     padding: 0;
 }
 
-
 body {
-
-    font-family:
-        Arial,
-        Helvetica,
-        sans-serif;
-
-    background:
-        #f4f7fb;
-
-    color:
-        #1f2937;
-
-    min-height:
-        100vh;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f4f7fb;
+    color: #1f2937;
+    min-height: 100vh;
 }
-
 
 /* ============================================================
    HEADER
 ============================================================ */
 
 .header {
-
-    text-align:
-        center;
-
-    padding:
-        45px 20px;
-
-    background:
-        #111827;
-
-    color:
-        white;
+    text-align: center;
+    padding: 45px 20px;
+    background: #111827;
+    color: white;
 }
-
 
 .logo {
-
-    font-size:
-        34px;
-
-    font-weight:
-        700;
-
-    margin-bottom:
-        10px;
+    font-size: 34px;
+    font-weight: 700;
+    margin-bottom: 10px;
 }
-
 
 .subtitle {
-
-    font-size:
-        16px;
-
-    opacity:
-        0.8;
+    font-size: 16px;
+    opacity: 0.8;
 }
-
 
 /* ============================================================
    MAIN
 ============================================================ */
 
 .container {
-
-    width:
-        min(1100px, 92%);
-
-    margin:
-        40px auto;
+    width: min(1100px, 92%);
+    margin: 40px auto;
 }
-
 
 /* ============================================================
    CARD
 ============================================================ */
 
 .card {
-
-    background:
-        white;
-
-    padding:
-        30px;
-
-    margin-bottom:
-        25px;
-
-    border-radius:
-        16px;
-
-    box-shadow:
-        0 5px 25px rgba(0, 0, 0, 0.07);
+    background: white;
+    padding: 30px;
+    margin-bottom: 25px;
+    border-radius: 16px;
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.07);
 }
-
 
 .card h2 {
-
-    margin-bottom:
-        10px;
-
-    font-size:
-        23px;
+    margin-bottom: 10px;
+    font-size: 23px;
 }
-
 
 .description {
-
-    color:
-        #6b7280;
-
-    margin-bottom:
-        20px;
+    color: #6b7280;
+    margin-bottom: 20px;
 }
-
 
 /* ============================================================
    BUTTON
 ============================================================ */
 
 .primary-button {
-
-    border:
-        none;
-
-    background:
-        #2563eb;
-
-    color:
-        white;
-
-    padding:
-        13px 24px;
-
-    border-radius:
-        8px;
-
-    cursor:
-        pointer;
-
-    font-size:
-        15px;
-
-    font-weight:
-        600;
-
-    transition:
-        0.2s;
+    border: none;
+    background: #2563eb;
+    color: white;
+    padding: 13px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    transition: 0.2s;
 }
-
 
 .primary-button:hover {
-
-    background:
-        #1d4ed8;
-
-    transform:
-        translateY(-1px);
+    background: #1d4ed8;
+    transform: translateY(-1px);
 }
 
+.primary-button:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+}
 
 /* ============================================================
    FILE
 ============================================================ */
 
 .file-name {
-
-    margin-top:
-        15px;
-
-    color:
-        #374151;
-
-    font-weight:
-        500;
+    margin-top: 15px;
+    color: #374151;
+    font-weight: 500;
 }
-
 
 /* ============================================================
    DASHBOARD
 ============================================================ */
 
 .dashboard {
-
-    margin-bottom:
-        25px;
+    margin-bottom: 25px;
 }
-
 
 .section-title {
-
-    margin-bottom:
-        20px;
+    margin-bottom: 20px;
 }
-
 
 .section-title h2 {
-
-    margin-bottom:
-        5px;
+    margin-bottom: 5px;
 }
-
 
 .section-title p {
-
-    color:
-        #6b7280;
+    color: #6b7280;
 }
 
-
 /* ============================================================
-   STAT GRID
+   KPI GRID
 ============================================================ */
 
 .stats-grid {
-
-    display:
-        grid;
-
-    grid-template-columns:
-        repeat(3, 1fr);
-
-    gap:
-        18px;
-
-    margin-bottom:
-        25px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin-bottom: 25px;
 }
-
 
 .stat-card {
-
-    background:
-        white;
-
-    border-radius:
-        14px;
-
-    padding:
-        22px;
-
-    box-shadow:
-        0 5px 20px rgba(0, 0, 0, 0.07);
+    background: white;
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.07);
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
 
 .stat-icon {
-
-    font-size:
-        25px;
-
-    margin-bottom:
-        12px;
+    font-size: 25px;
+    margin-bottom: 12px;
 }
-
 
 .stat-label {
-
-    color:
-        #6b7280;
-
-    font-size:
-        14px;
-
-    margin-bottom:
-        8px;
+    color: #6b7280;
+    font-size: 14px;
+    margin-bottom: 8px;
 }
-
 
 .stat-value {
-
-    font-size:
-        25px;
-
-    font-weight:
-        700;
-
-    color:
-        #2563eb;
-
-    word-break:
-        break-word;
+    font-size: 25px;
+    font-weight: 700;
+    color: #2563eb;
+    word-break: break-word;
 }
-
 
 .stat-value.small {
-
-    font-size:
-        19px;
+    font-size: 19px;
 }
 
+/* ============================================================
+   INSIGHTS
+============================================================ */
+
+.insights-box {
+    background: white;
+    border-radius: 16px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.07);
+}
+
+.insights-box h3 {
+    margin-bottom: 20px;
+}
+
+.insight-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+.insight-item {
+    background: #f8fafc;
+    padding: 18px;
+    border-radius: 10px;
+    border-left: 4px solid #2563eb;
+}
+
+.insight-title {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 6px;
+}
+
+.insight-value {
+    font-size: 18px;
+    font-weight: 700;
+}
 
 /* ============================================================
    TEXTAREA
 ============================================================ */
 
 textarea {
-
-    width:
-        100%;
-
-    resize:
-        vertical;
-
-    border:
-        1px solid #d1d5db;
-
-    border-radius:
-        8px;
-
-    padding:
-        14px;
-
-    font-size:
-        15px;
-
-    margin-bottom:
-        15px;
-
-    outline:
-        none;
+    width: 100%;
+    resize: vertical;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 15px;
+    margin-bottom: 15px;
+    outline: none;
+    font-family: Arial, Helvetica, sans-serif;
 }
-
 
 textarea:focus {
-
-    border-color:
-        #2563eb;
-
-    box-shadow:
-        0 0 0 3px rgba(37, 99, 235, 0.1);
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
-
 
 /* ============================================================
    RESULT
 ============================================================ */
 
 .result-section {
-
-    margin-top:
-        25px;
+    margin-top: 25px;
 }
-
-
-/* ============================================================
-   ANSWER
-============================================================ */
 
 .answer-box {
-
-    background:
-        white;
-
-    border-radius:
-        14px;
-
-    padding:
-        25px;
-
-    margin-bottom:
-        20px;
-
-    box-shadow:
-        0 5px 20px rgba(0, 0, 0, 0.07);
+    background: white;
+    border-radius: 14px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.07);
 }
-
 
 .answer-label {
-
-    font-size:
-        14px;
-
-    font-weight:
-        700;
-
-    color:
-        #2563eb;
-
-    margin-bottom:
-        10px;
-
-    text-transform:
-        uppercase;
+    font-size: 14px;
+    font-weight: 700;
+    color: #2563eb;
+    margin-bottom: 10px;
+    text-transform: uppercase;
 }
-
 
 .answer-text {
-
-    font-size:
-        20px;
-
-    font-weight:
-        600;
-
-    line-height:
-        1.5;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.5;
 }
-
 
 /* ============================================================
    RANKING
 ============================================================ */
 
 .ranking-box {
-
-    background:
-        white;
-
-    border-radius:
-        14px;
-
-    padding:
-        25px;
-
-    margin-bottom:
-        20px;
-
-    box-shadow:
-        0 5px 20px rgba(0, 0, 0, 0.07);
+    background: white;
+    border-radius: 14px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.07);
 }
-
 
 .ranking-box h3 {
-
-    margin-bottom:
-        20px;
+    margin-bottom: 20px;
 }
-
 
 .ranking-list {
-
-    display:
-        flex;
-
-    flex-direction:
-        column;
-
-    gap:
-        10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
-
 
 .ranking-item {
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    padding:
-        13px;
-
-    border-radius:
-        8px;
-
-    background:
-        #f8fafc;
+    display: flex;
+    align-items: center;
+    padding: 13px;
+    border-radius: 8px;
+    background: #f8fafc;
 }
-
 
 .rank {
-
-    width:
-        45px;
-
-    font-weight:
-        700;
+    width: 45px;
+    font-weight: 700;
 }
-
 
 .product-name {
-
-    flex:
-        1;
-
-    font-weight:
-        600;
+    flex: 1;
+    font-weight: 600;
 }
-
 
 .product-value {
-
-    font-weight:
-        700;
-
-    color:
-        #2563eb;
+    font-weight: 700;
+    color: #2563eb;
 }
-
 
 /* ============================================================
    CHART
 ============================================================ */
 
 .chart-box {
-
-    background:
-        white;
-
-    border-radius:
-        14px;
-
-    padding:
-        25px;
-
-    box-shadow:
-        0 5px 20px rgba(0, 0, 0, 0.07);
+    background: white;
+    border-radius: 14px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.07);
 }
-
 
 .chart-box h3 {
-
-    margin-bottom:
-        25px;
+    margin-bottom: 25px;
 }
-
 
 /* ============================================================
    BAR CHART
 ============================================================ */
 
 .bar-chart {
-
-    display:
-        flex;
-
-    flex-direction:
-        column;
-
-    gap:
-        16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
-
 
 .bar-row {
-
-    display:
-        grid;
-
-    grid-template-columns:
-        120px 1fr 80px;
-
-    align-items:
-        center;
-
-    gap:
-        12px;
+    display: grid;
+    grid-template-columns: 120px 1fr 90px;
+    align-items: center;
+    gap: 12px;
 }
-
 
 .bar-label {
-
-    font-weight:
-        600;
-
-    overflow:
-        hidden;
-
-    text-overflow:
-        ellipsis;
-
-    white-space:
-        nowrap;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
-
 
 .bar-wrapper {
-
-    height:
-        30px;
-
-    background:
-        #e5e7eb;
-
-    border-radius:
-        6px;
-
-    overflow:
-        hidden;
+    height: 30px;
+    background: #e5e7eb;
+    border-radius: 6px;
+    overflow: hidden;
 }
-
 
 .bar {
-
-    height:
-        100%;
-
-    background:
-        #2563eb;
-
-    border-radius:
-        6px;
-
-    transition:
-        width 0.7s ease;
+    height: 100%;
+    background: #2563eb;
+    border-radius: 6px;
+    transition: width 0.7s ease;
 }
-
 
 .bar-value {
-
-    text-align:
-        right;
-
-    font-weight:
-        700;
+    text-align: right;
+    font-weight: 700;
 }
 
+/* ============================================================
+   DATASET PREVIEW
+============================================================ */
+
+.dataset-box {
+    background: white;
+    border-radius: 14px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.07);
+    overflow-x: auto;
+}
+
+.dataset-box h3 {
+    margin-bottom: 20px;
+}
+
+.dataset-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.info-tag {
+    background: #eff6ff;
+    color: #1d4ed8;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.dataset-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 500px;
+}
+
+.dataset-table th,
+.dataset-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.dataset-table th {
+    background: #f8fafc;
+    font-weight: 700;
+}
+
+.dataset-table tr:hover td {
+    background: #f8fafc;
+}
 
 /* ============================================================
    LOADING
 ============================================================ */
 
 .loading-box {
-
-    background:
-        white;
-
-    border-radius:
-        14px;
-
-    padding:
-        30px;
-
-    text-align:
-        center;
-
-    box-shadow:
-        0 5px 20px rgba(0, 0, 0, 0.07);
+    background: white;
+    border-radius: 14px;
+    padding: 30px;
+    text-align: center;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.07);
 }
-
 
 .loader {
-
-    width:
-        35px;
-
-    height:
-        35px;
-
-    margin:
-        0 auto 15px;
-
-    border:
-        4px solid #e5e7eb;
-
-    border-top:
-        4px solid #2563eb;
-
-    border-radius:
-        50%;
-
-    animation:
-        spin 1s linear infinite;
+    width: 35px;
+    height: 35px;
+    margin: 0 auto 15px;
+    border: 4px solid #e5e7eb;
+    border-top: 4px solid #2563eb;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
 }
 
-
 @keyframes spin {
-
     from {
         transform: rotate(0deg);
     }
@@ -678,111 +451,78 @@ textarea:focus {
     to {
         transform: rotate(360deg);
     }
-
 }
-
 
 /* ============================================================
    ERROR
 ============================================================ */
 
 .error-box {
-
-    background:
-        #fef2f2;
-
-    color:
-        #991b1b;
-
-    border:
-        1px solid #fecaca;
-
-    border-radius:
-        10px;
-
-    padding:
-        20px;
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
 }
-
 
 .error-box strong {
-
-    display:
-        block;
-
-    margin-bottom:
-        8px;
+    display: block;
+    margin-bottom: 8px;
 }
-
 
 /* ============================================================
    FOOTER
 ============================================================ */
 
 .footer {
-
-    text-align:
-        center;
-
-    padding:
-        30px;
-
-    color:
-        #6b7280;
-
-    font-size:
-        14px;
+    text-align: center;
+    padding: 30px;
+    color: #6b7280;
+    font-size: 14px;
 }
-
 
 /* ============================================================
    MOBILE
 ============================================================ */
 
 @media (max-width: 750px) {
-
     .stats-grid {
-
-        grid-template-columns:
-            repeat(2, 1fr);
+        grid-template-columns: repeat(2, 1fr);
     }
 
+    .insight-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
-
 @media (max-width: 600px) {
-
     .logo {
-
-        font-size:
-            27px;
+        font-size: 27px;
     }
 
+    .container {
+        width: 94%;
+        margin: 25px auto;
+    }
 
     .card {
-
-        padding:
-            20px;
+        padding: 20px;
     }
-
 
     .stats-grid {
-
-        grid-template-columns:
-            1fr;
+        grid-template-columns: 1fr;
     }
-
 
     .bar-row {
-
-        grid-template-columns:
-            80px 1fr 60px;
-
-        gap:
-            8px;
-
-        font-size:
-            13px;
+        grid-template-columns: 80px 1fr 60px;
+        gap: 8px;
+        font-size: 13px;
     }
 
+    .chart-box,
+    .dataset-box,
+    .insights-box {
+        padding: 18px;
+    }
 }

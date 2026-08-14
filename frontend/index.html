@@ -1,7 +1,9 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
 
     <meta
@@ -15,11 +17,17 @@
         rel="stylesheet"
         href="style.css"
     >
+
 </head>
+
 
 <body>
 
-    <!-- HEADER -->
+
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
+
     <header class="header">
 
         <div class="logo">
@@ -33,10 +41,17 @@
     </header>
 
 
-    <!-- MAIN -->
+    <!-- =====================================================
+         MAIN
+    ====================================================== -->
+
     <main class="container">
 
-        <!-- UPLOAD -->
+
+        <!-- =================================================
+             UPLOAD CSV
+        ================================================== -->
+
         <section class="card">
 
             <h2>📂 Upload CSV Dataset</h2>
@@ -45,6 +60,7 @@
                 Upload your CSV file and let DataMind AI analyze it.
             </p>
 
+
             <input
                 type="file"
                 id="fileInput"
@@ -52,12 +68,14 @@
                 hidden
             >
 
+
             <button
                 id="uploadButton"
                 class="primary-button"
             >
                 Choose CSV File
             </button>
+
 
             <div
                 id="fileName"
@@ -69,7 +87,10 @@
         </section>
 
 
-        <!-- DASHBOARD -->
+        <!-- =================================================
+             DASHBOARD
+        ================================================== -->
+
         <section
             id="dashboard"
             class="dashboard"
@@ -77,15 +98,22 @@
         >
 
             <div class="section-title">
+
                 <h2>📊 Dataset Dashboard</h2>
 
                 <p>
                     Automatic insights from your dataset
                 </p>
+
             </div>
 
 
+            <!-- KPI CARDS -->
+
             <div class="stats-grid">
+
+
+                <!-- RECORDS -->
 
                 <div class="stat-card">
 
@@ -107,6 +135,8 @@
                 </div>
 
 
+                <!-- COLUMNS -->
+
                 <div class="stat-card">
 
                     <div class="stat-icon">
@@ -126,6 +156,8 @@
 
                 </div>
 
+
+                <!-- TOTAL SALES -->
 
                 <div class="stat-card">
 
@@ -147,6 +179,8 @@
                 </div>
 
 
+                <!-- AVERAGE SALES -->
+
                 <div class="stat-card">
 
                     <div class="stat-icon">
@@ -167,6 +201,8 @@
                 </div>
 
 
+                <!-- BEST PRODUCT -->
+
                 <div class="stat-card">
 
                     <div class="stat-icon">
@@ -186,6 +222,8 @@
 
                 </div>
 
+
+                <!-- LOWEST SALES -->
 
                 <div class="stat-card">
 
@@ -209,7 +247,10 @@
             </div>
 
 
-            <!-- DASHBOARD CHART -->
+            <!-- =================================================
+                 SALES CHART
+            ================================================== -->
+
             <div
                 id="dashboardChart"
                 class="chart-box"
@@ -223,23 +264,144 @@
 
             </div>
 
+
+            <!-- =================================================
+                 SMART INSIGHTS
+            ================================================== -->
+
+            <div
+                id="smartInsights"
+                class="chart-box"
+            >
+
+                <h3>
+                    🧠 Smart Insights
+                </h3>
+
+                <div id="insightsContent">
+
+                    <p>
+                        Upload a dataset to generate insights.
+                    </p>
+
+                </div>
+
+            </div>
+
         </section>
 
 
-        <!-- ASK DATA -->
+        <!-- =================================================
+             DATASET PREVIEW
+        ================================================== -->
+
+        <section
+            id="datasetPreview"
+            class="card"
+            style="display: none;"
+        >
+
+            <h2>
+                📋 Dataset Preview
+            </h2>
+
+            <p class="description">
+                Preview the first 10 rows of your uploaded dataset.
+            </p>
+
+
+            <!-- DATASET INFORMATION -->
+
+            <div class="dataset-info">
+
+                <div>
+
+                    <strong>
+                        Rows:
+                    </strong>
+
+                    <span id="previewRows">
+                        -
+                    </span>
+
+                </div>
+
+
+                <div>
+
+                    <strong>
+                        Columns:
+                    </strong>
+
+                    <span id="previewColumns">
+                        -
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- COLUMN NAMES -->
+
+            <div class="column-names-section">
+
+                <h3>
+                    Column Names
+                </h3>
+
+                <div
+                    id="columnNames"
+                    class="column-names"
+                >
+                    -
+                </div>
+
+            </div>
+
+
+            <!-- TABLE -->
+
+            <div class="table-container">
+
+                <table id="datasetTable">
+
+                    <thead
+                        id="datasetTableHead"
+                    ></thead>
+
+                    <tbody
+                        id="datasetTableBody"
+                    ></tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             ASK DATA
+        ================================================== -->
+
         <section class="card">
 
-            <h2>🤖 Ask Your Data</h2>
+            <h2>
+                🤖 Ask Your Data
+            </h2>
 
             <p class="description">
                 Ask a question about your CSV dataset.
             </p>
+
 
             <textarea
                 id="questionInput"
                 placeholder="Example: Which product sells the most?"
                 rows="3"
             ></textarea>
+
 
             <button
                 id="askButton"
@@ -251,14 +413,20 @@
         </section>
 
 
-        <!-- RESULT -->
+        <!-- =================================================
+             RESULT
+        ================================================== -->
+
         <section
             id="resultContainer"
             class="result-section"
             style="display: none;"
         >
 
-            <div id="answerContainer"></div>
+            <div
+                id="answerContainer"
+            ></div>
+
 
             <div
                 id="chartContainer"
@@ -270,7 +438,10 @@
     </main>
 
 
-    <!-- FOOTER -->
+    <!-- =====================================================
+         FOOTER
+    ====================================================== -->
+
     <footer class="footer">
 
         DataMind AI © 2026
@@ -278,8 +449,13 @@
     </footer>
 
 
+    <!-- =====================================================
+         JAVASCRIPT
+    ====================================================== -->
+
     <script src="script.js"></script>
 
 </body>
 
 </html>
+```
